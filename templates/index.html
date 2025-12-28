@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yutorah Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            /* Indigo 500 */
+            --primary-hover: #4f46e5;
+            /* Indigo 600 */
+            --bg-gradient-start: #f8fafc;
+            --bg-gradient-end: #e2e8f0;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            padding: 3rem;
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #4f46e5, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .input-group:focus-within {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+        }
+
+        input[type="url"] {
+            flex: 1;
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            color: var(--text-main);
+            width: 100%;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        button:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #status {
+            text-align: center;
+            margin: 2rem 0;
+            min-height: 60px;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #e2e8f0;
+            border-bottom-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-text {
+            margin-top: 1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        #result {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            line-height: 1.8;
+            font-size: 1.05rem;
+            color: #334155;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        #result h1,
+        #result h2,
+        #result h3 {
+            color: #1e293b;
+            margin-top: 2rem;
+        }
+
+        #result h1:first-child {
+            margin-top: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Markdown Styles */
+        #result blockquote {
+            border-left: 4px solid var(--primary);
+            margin: 1.5rem 0;
+            padding-left: 1rem;
+            color: var(--text-muted);
+            font-style: italic;
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        #result code {
+            background: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #ef4444;
+        }
+
+        @media (max-width: 640px) {
+            .main-container {
+                padding: 1.5rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+                padding: 1rem;
+                gap: 0.5rem;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+```html
+}
+
+.subtitle {
+text-align: center;
+color: var(--text-muted);
+margin-bottom: 3rem;
+font-size: 1.1rem;
+}
+
+.input-group {
+position: relative;
+display: flex;
+gap: 1rem;
+margin-bottom: 2rem;
+background: white;
+padding: 0.5rem;
+border-radius: 16px;
+box-shadow: var(--shadow-sm);
+border: 1px solid var(--border-color);
+transition: all 0.3s ease;
+}
+
+.input-group:focus-within {
+box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+border-color: var(--primary);
+}
+
+input[type="url"] {
+flex: 1;
+border: none;
+padding: 1rem 1.5rem;
+font-size: 1.1rem;
+outline: none;
+background: transparent;
+font-family: inherit;
+color: var(--text-main);
+width: 100%;
+}
+
+button {
+background: var(--primary);
+color: white;
+border: none;
+padding: 1rem 2rem;
+border-radius: 12px;
+font-size: 1rem;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s ease;
+white-space: nowrap;
+font-family: inherit;
+}
+
+button:hover {
+background: var(--primary-hover);
+transform: translateY(-1px);
+box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+button:disabled {
+background: var(--text-muted);
+cursor: not-allowed;
+transform: none;
+box-shadow: none;
+}
+
+#status {
+text-align: center;
+margin: 2rem 0;
+min-height: 60px;
+}
+
+.loader {
+width: 48px;
+height: 48px;
+border: 5px solid #e2e8f0;
+border-bottom-color: var(--primary);
+border-radius: 50%;
+display: inline-block;
+box-sizing: border-box;
+animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+0% {
+transform: rotate(0deg);
+}
+
+100% {
+transform: rotate(360deg);
+}
+}
+
+.status-text {
+margin-top: 1rem;
+color: var(--text-muted);
+font-weight: 500;
+animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+0% {
+opacity: 0.6;
+}
+
+50% {
+opacity: 1;
+}
+
+100% {
+opacity: 0.6;
+}
+}
+
+#result {
+background: white;
+padding: 2.5rem;
+border-radius: 16px;
+border: 1px solid var(--border-color);
+line-height: 1.8;
+font-size: 1.05rem;
+color: #334155;
+animation: slideUp 0.5s ease-out;
+}
+
+#result h1,
+#result h2,
+#result h3 {
+color: #1e293b;
+margin-top: 2rem;
+}
+
+#result h1:first-child {
+margin-top: 0;
+}
+
+.hidden {
+display: none !important;
+}
+
+@keyframes slideUp {
+from {
+opacity: 0;
+transform: translateY(20px);
+}
+
+to {
+opacity: 1;
+transform: translateY(0);
+}
+}
+
+/* Markdown Styles */
+#result blockquote {
+border-left: 4px solid var(--primary);
+margin: 1.5rem 0;
+padding-left: 1rem;
+color: var(--text-muted);
+font-style: italic;
+background: #f8fafc;
+padding: 1rem;
+border-radius: 0 8px 8px 0;
+}
+
+#result code {
+background: #f1f5f9;
+padding: 0.2rem 0.4rem;
+border-radius: 4px;
+font-family: 'Monaco', 'Consolas', monospace;
+font-size: 0.9em;
+color: #ef4444;
+}
+
+@media (max-width: 640px) {
+.main-container {
+padding: 1.5rem;
+}
+
+.input-group {
+flex-direction: column;
+padding: 1rem;
+gap: 0.5rem;
+}
+
+button {
+width: 100%;
+}
+
+h1 {
+font-size: 2rem;
+}
+}
+
+@keyframes shake {
+0%, 100% { transform: translateX(0); }
+25% { transform: translateX(-5px); }
+75% { transform: translateX(5px); }
+}
+</style>
+</head>
+
+<body>
+    <div class="main-container">
+        <h1>Yutorah Notes</h1>
+        <p class="subtitle">Transform audio shiurim into comprehensive, clear notes with AI.</p>
+
+        <div class="input-group">
+            <input type="url" id="urlInput" placeholder="Paste Yutorah Shiur URL here..." required autocomplete="off">
+            <button id="generateBtn" onclick="generateNotes('notes')">
+                <span>Generate Notes</span>
+            </button>
+            <button id="transcribeBtn" onclick="generateNotes('transcript')"
+                style="background-color: #10b981; margin-left: 0.5rem;">
+                <span>Transcribe</span>
+            </button>
+        </div>
+
+        <div id="status" class="hidden">
+            <span class="loader"></span>
+            <p id="statusText" class="status-text">Processing your request...</p>
+        </div>
+
+        <div id="result" class="hidden"></div>
+    </div>
+
+    <script>
+        // Version: 2.1 - Added Transcription support
+        // Check for URL parameter on page load and auto-fill
+        window.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const yutorahUrl = urlParams.get('url');
+            const mode = urlParams.get('mode'); // 'notes' or 'transcript'
+
+            if (yutorahUrl) {
+                const urlInput = document.getElementById('urlInput');
+                if (urlInput) {
+                    urlInput.value = yutorahUrl;
+                    // Auto-submit after a short delay to ensure page is ready
+                    setTimeout(() => {
+                        if (mode === 'transcript') {
+                            const transcribeBtn = document.getElementById('transcribeBtn');
+                            if (transcribeBtn) transcribeBtn.click();
+                        } else {
+                            const generateBtn = document.getElementById('generateBtn');
+                            if (generateBtn) generateBtn.click();
+                        }
+                    }, 500);
+                }
+            }
+        });
+
+        function extractErrorFromResponse(text, statusCode) {
+            // Try to extract error information from various response formats
+
+            // 1. Check if it's HTML and look for common error patterns
+            if (text.trim().startsWith('<')) {
+                // Create a temporary DOM element to parse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+
+                // Look for common error message locations in HTML
+                const errorSelectors = [
+                    'title',
+                    'h1',
+                    '.error',
+                    '#error',
+                    '[class*="error"]',
+                    '[id*="error"]',
+                    'body > p',
+                    'body > div'
+                ];
+
+                for (const selector of errorSelectors) {
+                    const element = doc.querySelector(selector);
+                    if (element && element.textContent.trim()) {
+                        const errorText = element.textContent.trim();
+                        // Filter out generic HTML boilerplate
+                        if (errorText.length > 10 &&
+                            !errorText.toLowerCase().includes('html') &&
+                            !errorText.toLowerCase().includes('doctype')) {
+                            return `${errorText} (HTTP ${statusCode})`;
+                        }
+                    }
+                }
+
+                // Look for text content in body
+                const bodyText = doc.body ? doc.body.textContent.trim() : '';
+                if (bodyText && bodyText.length < 500) {
+                    // If body text is short, it might be an error message
+                    return `${bodyText.substring(0, 200)} (HTTP ${statusCode})`;
+                }
+            }
+
+            // 2. Check if it looks like a plain text error message
+            const trimmedText = text.trim();
+            if (trimmedText.length > 0 && trimmedText.length < 500 && !trimmedText.startsWith('<!')) {
+                return `${trimmedText.substring(0, 200)} (HTTP ${statusCode})`;
+            }
+
+            // 3. Check for JSON-like structure that might have error info
+            try {
+                const jsonData = JSON.parse(text);
+                if (jsonData.error) {
+                    return jsonData.error;
+                }
+                if (jsonData.message) {
+                    return jsonData.message;
+                }
+            } catch (e) {
+                // Not JSON, continue
+            }
+
+            // 4. Fallback: return status code and truncated response
+            const preview = text.substring(0, 150).replace(/\s+/g, ' ');
+            return `Server returned non-JSON response (HTTP ${statusCode}): ${preview}${text.length > 150 ? '...' : ''}`;
+        }
+
+        async function generateNotes(type = 'notes') {
+            const urlInput = document.getElementById('urlInput');
+            const generateBtn = document.getElementById('generateBtn');
+            const transcribeBtn = document.getElementById('transcribeBtn');
+            const statusDiv = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            const resultDiv = document.getElementById('result');
+
+            const url = urlInput.value.trim();
+            if (!url) {
+                // Shake animation for error
+                urlInput.parentElement.style.animation = 'shake 0.5s';
+                setTimeout(() => urlInput.parentElement.style.animation = '', 500);
+                return;
+            }
+
+            // Reset UI
+            generateBtn.disabled = true;
+            transcribeBtn.disabled = true;
+            generateBtn.innerHTML = 'Processing...';
+            transcribeBtn.innerHTML = 'Processing...';
+            statusDiv.classList.remove('hidden');
+            resultDiv.classList.add('hidden');
+            resultDiv.innerHTML = '';
+            statusText.textContent = type === 'transcript' ?
+                "Finding audio and generating transcript... (This may take a few minutes)" :
+                "Finding audio and generating notes... (This may take a minute)";
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url, type: type }),
+                });
+
+                // Get response text first (can only read once)
+                const responseText = await response.text();
+                const contentType = response.headers.get('content-type');
+                let data;
+
+                // Check if response looks like HTML (starts with <)
+                const looksLikeHTML = responseText.trim().startsWith('<');
+
+                // Try to parse as JSON only if:
+                // 1. Content-Type says it's JSON AND it doesn't look like HTML
+                // 2. OR Content-Type is missing/null but it doesn't look like HTML
+                const shouldTryJSON = (contentType && contentType.includes('application/json')) ||
+                    (!contentType && !looksLikeHTML);
+
+                if (shouldTryJSON && !looksLikeHTML) {
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (parseError) {
+                        // JSON parsing failed - extract error from response
+                        const errorInfo = extractErrorFromResponse(responseText, response.status);
+                        throw new Error(errorInfo);
+                    }
+                } else {
+                    // Not JSON - extract useful information from HTML/text
+                    const errorInfo = extractErrorFromResponse(responseText, response.status);
+                    throw new Error(errorInfo);
+                }
+
+                if (response.ok) {
+                    statusDiv.classList.add('hidden');
+                    resultDiv.classList.remove('hidden');
+                    // Render Markdown
+                    resultDiv.innerHTML = marked.parse(data.notes);
+                } else {
+                    throw new Error(data.error || 'An error occurred');
+                }
+            } catch (error) {
+                statusDiv.classList.remove('hidden');
+                document.querySelector('.loader').style.display = 'none';
+                statusText.textContent = `Error: ${error.message}`;
+                statusText.style.color = '#ef4444';
+                statusText.style.animation = 'none';
+            } finally {
+                generateBtn.disabled = false;
+                transcribeBtn.disabled = false;
+                generateBtn.innerHTML = 'Generate Notes';
+                transcribeBtn.innerHTML = 'Transcribe';
+                if (statusText.textContent.includes('Error')) {
+                    // Keep error visible
+                } else {
+                    // Reset loader for next time if successful
+                    document.querySelector('.loader').style.display = 'inline-block';
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
+```

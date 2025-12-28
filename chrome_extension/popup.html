@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YUTorah Notes</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>YUTorah Notes</h1>
+            <div id="statusIndicator" class="status-dot" title="Checking API Key..."></div>
+        </header>
+
+        <main>
+            <button id="openSettings" class="menu-item">
+                <span class="icon">⚙️</span>
+                <div class="label">
+                    <span class="title">Settings</span>
+                    <span class="subtitle">Configure API Key</span>
+                </div>
+                <span class="arrow">→</span>
+            </button>
+
+            <button id="viewNotes" class="menu-item">
+                <span class="icon">📝</span>
+                <div class="label">
+                    <span class="title">My Notes</span>
+                    <span class="subtitle">View saved summaries</span>
+                </div>
+                <span class="arrow">→</span>
+            </button>
+
+            <div class="divider"></div>
+
+            <div class="info-section">
+                <p>To use this extension:</p>
+                <ol>
+                    <li>Go to a <strong>yutorah.org</strong> shiur page</li>
+                    <li>Click the <strong>"Summarize"</strong> button on the page</li>
+                </ol>
+            </div>
+        </main>
+
+        <footer>
+            <a href="#" id="openHelp">Need help?</a>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>

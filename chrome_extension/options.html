@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YUTorah Notes - Settings</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ YUTorah Notes Settings</h1>
+            <p class="subtitle">Configure your extension to generate AI-powered notes from YUTorah shiurim</p>
+        </header>
+
+        <main>
+            <!-- API Key Section -->
+            <section class="card">
+                <h2>🔑 Gemini API Key</h2>
+                <div class="info-box">
+                    <p><strong>Important:</strong> You need your own Gemini API key to use this extension.</p>
+                    <p>Your API key is stored <strong>locally in your browser</strong> and is never shared with anyone.
+                    </p>
+                    <p><strong>The developer does NOT have access to your API key!</strong></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="apiKey">API Key:</label>
+                    <div class="input-group">
+                        <input type="password" id="apiKey" placeholder="Enter your Gemini API key" autocomplete="off">
+                        <button id="toggleApiKey" class="btn-secondary" title="Show/Hide API Key">👁️</button>
+                    </div>
+                    <small>Get your free API key from <a href="https://aistudio.google.com/app/apikey"
+                            target="_blank">Google AI Studio</a></small>
+                </div>
+
+                <div class="button-group">
+                    <button id="saveApiKey" class="btn-primary">Save API Key</button>
+                    <button id="testApiKey" class="btn-secondary">Test Connection</button>
+                    <button id="clearApiKey" class="btn-danger">Clear API Key</button>
+                </div>
+
+                <div id="apiKeyStatus" class="status-message"></div>
+            </section>
+
+            <!-- How to Get API Key Section -->
+            <section class="card">
+                <h2>📖 How to Get Your API Key</h2>
+                <ol class="instructions">
+                    <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                    <li>Sign in with your Google account</li>
+                    <li>Click "Create API Key" or "Get API Key"</li>
+                    <li>Select "Create API key in new project" (or use an existing project)</li>
+                    <li>Copy the generated API key</li>
+                    <li>Paste it in the field above and click "Save API Key"</li>
+                </ol>
+
+                <div class="info-box warning">
+                    <p><strong>⚠️ Privacy Notice:</strong></p>
+                    <ul>
+                        <li>Your API key is stored locally in your browser's extension storage</li>
+                        <li>The extension developer (the person who created this extension) has <strong>NO
+                                ACCESS</strong> to your API key</li>
+                        <li>Audio files are sent directly from your browser to Google's Gemini API</li>
+                        <li>No data passes through any third-party servers</li>
+                        <li>All notes are stored locally in your browser</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Custom Prompts Section -->
+            <section class="card">
+                <h2>✏️ Custom Prompts</h2>
+                <p>Customize the prompts used to generate notes and transcripts. Leave blank to use default prompts.</p>
+
+                <div class="form-group">
+                    <label for="customNotesPrompt">Custom Notes Prompt:</label>
+                    <textarea id="customNotesPrompt" rows="8"
+                        placeholder="Enter custom prompt for notes generation (optional)"></textarea>
+                    <small>This prompt will be used when generating notes. Hebrew terms will still be preserved in
+                        Hebrew script.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="customTranscriptPrompt">Custom Transcript Prompt:</label>
+                    <textarea id="customTranscriptPrompt" rows="8"
+                        placeholder="Enter custom prompt for transcript generation (optional)"></textarea>
+                    <small>This prompt will be used when generating transcripts.</small>
+                </div>
+
+                <div class="button-group">
+                    <button id="savePrompts" class="btn-primary">Save Prompts</button>
+                    <button id="resetPrompts" class="btn-secondary">Reset to Default</button>
+                </div>
+
+                <div id="promptStatus" class="status-message"></div>
+            </section>
+
+            <!-- Storage Management Section -->
+            <section class="card">
+                <h2>💾 Storage Management</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Cached Notes</div>
+                        <div class="stat-value" id="noteCount">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Storage Used</div>
+                        <div class="stat-value" id="storageUsed">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Storage Available</div>
+                        <div class="stat-value" id="storageAvailable">-</div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="viewNotes" class="btn-secondary">View All Notes</button>
+                    <button id="exportNotes" class="btn-secondary">Export Notes</button>
+                    <button id="importNotes" class="btn-secondary">Import Notes</button>
+                    <button id="clearCache" class="btn-danger">Clear All Notes</button>
+                </div>
+
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </section>
+
+            <!-- About Section -->
+            <section class="card">
+                <h2>ℹ️ About</h2>
+                <p><strong>YUTorah Notes</strong> v2.0.0</p>
+                <p>Generate AI-powered notes and transcripts from YUTorah shiurim with one click.</p>
+                <p>This extension is completely private - all processing happens between your browser and Google's
+                    Gemini API.</p>
+                <p class="footer-links">
+                    <a href="https://github.com/yourusername/yutorah-notes" target="_blank">GitHub</a> •
+                    <a href="https://github.com/yourusername/yutorah-notes/issues" target="_blank">Report Issue</a>
+                </p>
+            </section>
+        </main>
+    </div>
+
+    <script src="storage.js"></script>
+    <script src="options.js"></script>
+</body>
+
+</html>

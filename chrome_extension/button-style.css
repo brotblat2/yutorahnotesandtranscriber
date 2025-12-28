@@ -1,0 +1,74 @@
+/* Styles for the YUTorah Extension buttons */
+
+#yutorah-transcribe-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    animation: slideIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.yutorah-action-btn {
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 200px;
+    /* Fixed width for alignment */
+}
+
+#yutorah-summarize-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    /* Indigo/Purple */
+}
+
+#yutorah-transcribe-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    /* Emerald/Green */
+}
+
+.yutorah-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+#yutorah-summarize-btn:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
+
+#yutorah-transcribe-btn:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.yutorah-action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.yutorah-action-btn svg {
+    flex-shrink: 0;
+}

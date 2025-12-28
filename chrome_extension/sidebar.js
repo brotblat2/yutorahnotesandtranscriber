@@ -1,0 +1,406 @@
+// Sidebar JavaScript
+// Handles progress updates and results display
+
+console.log('Sidebar script loaded');
+
+let currentContent = '';
+let currentType = '';
+let currentUrl = '';
+
+// Listen for messages from content script
+window.addEventListener('message', (event) => {
+    console.log('Sidebar received raw message:', event);
+
+    // Accept messages from parent window
+    if (event.source !== window.parent) {
+        console.log('Message not from parent, ignoring');
+        return;
+    }
+
+    console.log('Sidebar processing message:', event.data);
+
+    const { action, data } = event.data;
+
+    switch (action) {
+        case 'INIT':
+            console.log('INIT received');
+            initSidebar(data);
+            break;
+        case 'PROGRESS':
+            console.log('PROGRESS received');
+            updateProgress(data);
+            break;
+        case 'SUCCESS':
+            console.log('SUCCESS received');
+            showResults(data);
+            break;
+        case 'ERROR':
+            console.log('ERROR received');
+            showError(data);
+            break;
+        default:
+            console.log('Unknown action:', action);
+    }
+});
+
+function initSidebar(data) {
+    console.log('Initializing sidebar with:', data);
+    currentType = data.type;
+    currentUrl = data.url || window.parent.location.href;
+    const badge = document.getElementById('typeBadge');
+    if (badge) {
+        badge.textContent = data.type === 'transcript' ? 'Transcript' : 'Notes';
+        console.log('Badge updated');
+    } else {
+        console.error('typeBadge element not found');
+    }
+}
+
+function updateProgress(data) {
+    console.log('Updating progress:', data);
+    const { message, progress } = data;
+
+    const progressText = document.getElementById('progressText');
+    if (progressText) {
+        progressText.innerHTML = `<span class="spinner"></span>${message}`;
+    }
+
+    if (progress !== undefined) {
+        const progressFill = document.getElementById('progressBarFill');
+        if (progressFill) {
+            progressFill.style.width = `${progress}%`;
+        }
+    }
+}
+
+function showResults(data) {
+    console.log('Showing results');
+    currentContent = data.content;
+
+    // Hide progress section
+    const progressSection = document.getElementById('progressSection');
+    if (progressSection) {
+        progressSection.style.display = 'none';
+    }
+
+    // Show results section
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsContent = document.getElementById('resultsContent');
+    const actions = document.getElementById('actions');
+
+    if (resultsContent) {
+        resultsContent.innerHTML = renderMarkdown(data.content);
+    }
+    if (resultsSection) {
+        resultsSection.classList.add('visible');
+    }
+    if (actions) {
+        actions.classList.add('visible');
+    }
+}
+
+function showError(data) {
+    console.log('Showing error:', data);
+    const { message } = data;
+
+    // Hide progress section
+    const progressSection = document.getElementById('progressSection');
+    if (progressSection) {
+        progressSection.style.display = 'none';
+    }
+
+    // Show error section
+    const errorSection = document.getElementById('errorSection');
+    const errorText = document.getElementById('errorText');
+    if (errorText) {
+        errorText.textContent = message;
+    }
+    if (errorSection) {
+        errorSection.classList.add('visible');
+    }
+}
+
+// Simple markdown renderer
+function renderMarkdown(markdown) {
+    let html = markdown;
+
+    // Headers
+    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+    // Bold
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Blockquotes
+    html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+    // Lists
+    html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+    // Line breaks
+    html = html.replace(/\n\n/g, '</p><p>');
+    html = html.replace(/\n/g, '<br>');
+
+    // Wrap in paragraphs
+    html = '<p>' + html + '</p>';
+
+    // Clean up
+    html = html.replace(/<p><\/p>/g, '');
+    html = html.replace(/<p>(<h[1-3]>)/g, '$1');
+    html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<ul>)/g, '$1');
+    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<blockquote>)/g, '$1');
+    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
+
+    return html;
+}
+
+// Close sidebar
+const closeBtn = document.getElementById('closeSidebar');
+if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+        console.log('Close button clicked');
+        window.parent.postMessage({ action: 'CLOSE_SIDEBAR' }, '*');
+    });
+}
+
+// Copy to clipboard
+const copyBtn = document.getElementById('copyBtn');
+if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+        console.log('Copy button clicked');
+        try {
+            await navigator.clipboard.writeText(currentContent);
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        } catch (error) {
+            console.error('Copy error:', error);
+            alert('Error copying to clipboard: ' + error.message);
+        }
+    });
+}
+
+// Download as markdown
+const downloadBtn = document.getElementById('downloadBtn');
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+        console.log('Download MD button clicked');
+        const blob = new Blob([currentContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `yutorah-${currentType}-${Date.now()}.md`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    });
+}
+
+// Download as DOCX (using HTML format with UTF-8 for Hebrew support)
+const downloadDocxBtn = document.getElementById('downloadDocxBtn');
+if (downloadDocxBtn) {
+    downloadDocxBtn.addEventListener('click', () => {
+        console.log('Download DOCX button clicked');
+
+        // Convert markdown to HTML with proper formatting
+        let html = currentContent;
+
+        // Headers
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+        // Bold
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        // Blockquotes
+        html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+        // Lists - properly handle bullet points
+        const lines = html.split('\n');
+        let inList = false;
+        let processedLines = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.match(/^- /)) {
+                if (!inList) {
+                    processedLines.push('<ul>');
+                    inList = true;
+                }
+                processedLines.push('<li>' + line.substring(2) + '</li>');
+            } else {
+                if (inList) {
+                    processedLines.push('</ul>');
+                    inList = false;
+                }
+                processedLines.push(line);
+            }
+        }
+        if (inList) {
+            processedLines.push('</ul>');
+        }
+
+        html = processedLines.join('\n');
+
+        // Paragraphs
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = html.replace(/\n/g, '<br>');
+        html = '<p>' + html + '</p>';
+
+        // Clean up
+        html = html.replace(/<p><\/p>/g, '');
+        html = html.replace(/<p>(<h[1-3]>)/g, '$1');
+        html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
+        html = html.replace(/<p>(<ul>)/g, '$1');
+        html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+        html = html.replace(/<p>(<blockquote>)/g, '$1');
+        html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
+
+        // Create complete HTML document with UTF-8 encoding for Hebrew
+        const htmlDoc = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+        }
+        h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin-top: 24pt;
+            margin-bottom: 12pt;
+        }
+        h2 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 18pt;
+            margin-bottom: 10pt;
+        }
+        h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 14pt;
+            margin-bottom: 8pt;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 10pt;
+        }
+        ul {
+            margin-top: 0;
+            margin-bottom: 10pt;
+        }
+        li {
+            margin-bottom: 5pt;
+        }
+        strong {
+            font-weight: bold;
+        }
+        blockquote {
+            margin-left: 20pt;
+            padding-left: 10pt;
+            border-left: 3pt solid #ccc;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+${html}
+</body>
+</html>`;
+
+        // Create blob with UTF-8 BOM for proper encoding
+        const blob = new Blob(['\ufeff', htmlDoc], {
+            type: 'application/msword;charset=utf-8'
+        });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `yutorah-${currentType}-${Date.now()}.doc`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    });
+}
+
+// Delete note
+const deleteBtn = document.getElementById('deleteBtn');
+if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+        console.log('Delete button clicked');
+        if (!confirm('Are you sure you want to delete this note? This cannot be undone.')) {
+            return;
+        }
+
+        try {
+            // Send message to parent to delete the note
+            window.parent.postMessage({
+                action: 'DELETE_NOTE',
+                data: {
+                    type: currentType,
+                    url: currentUrl
+                }
+            }, '*');
+
+            // Close the sidebar
+            window.parent.postMessage({ action: 'CLOSE_SIDEBAR' }, '*');
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('Error deleting note: ' + error.message);
+        }
+    });
+}
+
+// Redo/Regenerate note
+const redoBtn = document.getElementById('redoBtn');
+if (redoBtn) {
+    redoBtn.addEventListener('click', async () => {
+        console.log('Redo button clicked');
+        if (!confirm('Regenerate this note? The current version will be replaced.')) {
+            return;
+        }
+
+        try {
+            // Send message to parent to regenerate the note
+            window.parent.postMessage({
+                action: 'REGENERATE_NOTE',
+                data: {
+                    type: currentType,
+                    url: currentUrl
+                }
+            }, '*');
+
+            // Reset UI to show progress
+            const progressSection = document.getElementById('progressSection');
+            const resultsSection = document.getElementById('resultsSection');
+            const actions = document.getElementById('actions');
+
+            if (progressSection) progressSection.style.display = 'block';
+            if (resultsSection) resultsSection.classList.remove('visible');
+            if (actions) actions.classList.remove('visible');
+
+            updateProgress({ message: 'Regenerating...', progress: 0 });
+        } catch (error) {
+            console.error('Redo error:', error);
+            alert('Error regenerating note: ' + error.message);
+        }
+    });
+}
+
+// Signal that sidebar is ready
+console.log('Sidebar sending READY message');
+window.parent.postMessage({ action: 'SIDEBAR_READY' }, '*');
+console.log('Sidebar initialization complete');

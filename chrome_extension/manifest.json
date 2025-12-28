@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "YUTorah Notes",
+  "description": "Generate AI-powered notes and transcripts from YUTorah shiurim with one click - completely private and local",
+  "version": "2.0.2",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://*.yutorah.org/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.yutorah.org/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "button-style.css"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_title": "YUTorah Notes",
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "sidebar.html",
+        "sidebar.js",
+        "storage.js"
+      ],
+      "matches": [
+        "*://*.yutorah.org/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
