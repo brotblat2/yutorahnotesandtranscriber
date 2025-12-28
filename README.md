@@ -7,10 +7,9 @@
 - 🎯 **One-Click Processing** - Generate notes or transcripts directly from any YUTorah page
 - 🔒 **100% Private** - All processing happens between your browser and Google's Gemini API
 - 💾 **Local Storage** - Notes are saved locally in your browser, never on external servers
-- 🆓 **Free to Use** - Uses Google's generous free tier (1,500 requests/day)
-- 🌐 **No Hosting Required** - Everything runs in your browser extension
-- 📱 **Offline Access** - View cached notes even without internet
-- 🔍 **Search & Organize** - Search through all your saved notes
+- 🆓 **Free to Use** - Uses Google's generous free tier
+- 🌐 **No Hosting Required** - Everything runs in your browser
+- 📱 **Offline Access** - View cached notes even without internet. Download as .doc or as .md
 - 📤 **Export/Import** - Backup and restore your notes as JSON
 
 ## 🚀 Quick Start
@@ -47,7 +46,7 @@ Your API key is stored locally in your browser and never shared with anyone.
 1. Visit any YUTorah shiur page (e.g., https://www.yutorah.org/lectures/1154805)
 2. Click "Summarize Shiur" for notes or "Transcribe Shiur" for transcript
 3. Wait 30-60 seconds for processing
-4. View your notes in a new tab!
+4. View your notes!
 
 ## 📖 Detailed Setup Guide
 
@@ -128,20 +127,20 @@ Generates comprehensive notes including:
 ### Transcribe Shiur
 
 Generates verbatim transcript including:
-- Speaker identification
 - Hebrew terms (in Hebrew script)
 - Paragraph breaks for topic changes
-- Timestamps for unclear audio
 
 ### Notes Management
 
 - **View All Notes** - Browse all saved notes
-- **Search** - Find notes by content
 - **Export** - Download notes as JSON
 - **Import** - Restore from backup
 - **Delete** - Remove individual notes or clear all
 
 ## 🛠️ Development
+- **Search** - Find notes by content
+- **Folders** - Organize notes into folders
+- **Tags** - Tag notes with keywords
 
 ### Project Structure
 
