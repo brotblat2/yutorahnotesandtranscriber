@@ -168,31 +168,11 @@ chrome_extension/
 - **Vanilla JavaScript** - No frameworks needed
 - **Modern CSS** - Responsive design
 
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## 📜 License
-
-This project is open source and available under the MIT License.
-
 ## 🙏 Acknowledgments
 
 - **YUTorah** - For providing amazing Torah content
 - **Google Gemini** - For the AI API
 - **Chrome Extensions** - For the platform
-
-## 📞 Support
-
-- **Issues:** [GitHub Issues](https://github.com/yourusername/yutorah-notes/issues)
-- **Documentation:** [SETUP.md](SETUP.md)
-
----
 
 **Made with ❤️ for Torah learning**
 
