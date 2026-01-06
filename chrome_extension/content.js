@@ -245,7 +245,7 @@ script.onload = function () {
 
             if (!apiKeyCheck || !apiKeyCheck.success || !apiKeyCheck.hasApiKey) {
                 sendToSidebar('ERROR', {
-                    message: 'No API key configured. Please set up your Gemini API key in extension settings.'
+                    message: 'No API key entered. Please go to extension settings to input your API key.'
                 });
                 setTimeout(() => chrome.runtime.openOptionsPage(), 2000);
                 return;

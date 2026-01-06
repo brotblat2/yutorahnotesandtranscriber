@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('clearCache').addEventListener('click', clearCache);
     document.getElementById('savePrompts').addEventListener('click', saveCustomPrompts);
     document.getElementById('resetPrompts').addEventListener('click', resetCustomPrompts);
+    document.getElementById('togglePrompts').addEventListener('click', togglePromptsSection);
 });
 
 /**
@@ -281,5 +282,21 @@ async function resetCustomPrompts() {
         showStatus('promptStatus', 'Prompts reset to default', 'success');
     } catch (error) {
         showStatus('promptStatus', 'Error resetting prompts: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Toggle the custom prompts section visibility
+ */
+function togglePromptsSection() {
+    const section = document.getElementById('promptsSection');
+    const button = document.getElementById('togglePrompts');
+
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        button.textContent = '🔼 Hide Advanced Options';
+    } else {
+        section.style.display = 'none';
+        button.textContent = '🔧 Advanced Options (Optional)';
     }
 }

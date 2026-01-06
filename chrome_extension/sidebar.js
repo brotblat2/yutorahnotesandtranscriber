@@ -101,7 +101,7 @@ function showResults(data) {
 
 function showError(data) {
     console.log('Showing error:', data);
-    const { message } = data;
+    const { message, isRetryable } = data;
 
     // Hide progress section
     const progressSection = document.getElementById('progressSection');
@@ -112,9 +112,21 @@ function showError(data) {
     // Show error section
     const errorSection = document.getElementById('errorSection');
     const errorText = document.getElementById('errorText');
+    const tryAgainBtn = document.getElementById('tryAgainBtn');
+
     if (errorText) {
         errorText.textContent = message;
     }
+
+    // Show Try Again button if error is retryable (e.g., short audio)
+    if (tryAgainBtn) {
+        if (isRetryable) {
+            tryAgainBtn.style.display = 'block';
+        } else {
+            tryAgainBtn.style.display = 'none';
+        }
+    }
+
     if (errorSection) {
         errorSection.classList.add('visible');
     }
@@ -167,24 +179,29 @@ if (closeBtn) {
     });
 }
 
-// Copy to clipboard
-const copyBtn = document.getElementById('copyBtn');
-if (copyBtn) {
-    copyBtn.addEventListener('click', async () => {
-        console.log('Copy button clicked');
-        try {
-            await navigator.clipboard.writeText(currentContent);
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = '✓ Copied!';
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-            }, 2000);
-        } catch (error) {
-            console.error('Copy error:', error);
-            alert('Error copying to clipboard: ' + error.message);
-        }
+// Try Again button (for retryable errors)
+const tryAgainBtn = document.getElementById('tryAgainBtn');
+if (tryAgainBtn) {
+    tryAgainBtn.addEventListener('click', () => {
+        console.log('Try Again button clicked');
+        // Hide error section and show progress
+        const errorSection = document.getElementById('errorSection');
+        const progressSection = document.getElementById('progressSection');
+
+        if (errorSection) errorSection.classList.remove('visible');
+        if (progressSection) progressSection.style.display = 'block';
+
+        // Send regenerate message to retry
+        window.parent.postMessage({
+            action: 'REGENERATE_NOTE',
+            data: {
+                type: currentType,
+                url: currentUrl
+            }
+        }, '*');
     });
 }
+
 
 // Download as markdown
 const downloadBtn = document.getElementById('downloadBtn');

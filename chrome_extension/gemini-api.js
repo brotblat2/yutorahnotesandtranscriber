@@ -121,13 +121,14 @@ const GeminiAPI = {
                 ? `Generate a verbatim or near-verbatim transcript of this audio shiur.
 
 Rules:
-- Identify speakers if possible.
 - Hebrew terms must be written in Hebrew script.
 - Do not summarize or explain.
 - Mark unclear audio as [inaudible].
+- CRITICAL: DO NOT HALLUCINATE. If you do not hear sensible audio, do not make things up.
+- CRITICAL: DO NOT time-stamp. 
 
-If you cannot process the audio, respond with exactly:
-"ERROR: Unable to process audio file."`
+If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
+"sorry can't access the audio file"`
                 :
                 `Follow these rules strictly:
 
@@ -169,8 +170,6 @@ Do NOT add:
 
 Any introduction, conclusion, framing, or summary not present in the shiur
 
-Any personal commentary, interpretation, or evaluation
-
 Any meta statements about the task, the audio, or note-taking
 
 Do NOT include any logistical, administrative, or meta information mentioned in the shiur.
@@ -184,11 +183,12 @@ Prefer complete, explanatory sentences over fragmented speech patterns
 Preserve the shiur’s analytical depth while improving readability and conceptual flow
 
 CRITICAL: All notes must be in English except for Hebrew terms, which must appear in Hebrew script only.
+CRITICAL: DO NOT HALLUCINATE. Ensure every point is derived directly from the audio.
 
 Return ONLY the formatted notes.
 
-If you cannot access or process the audio, respond with exactly:
-"ERROR: Unable to process audio file."
+If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
+"sorry can't access the audio file"
 `;
         }
 

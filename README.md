@@ -106,13 +106,6 @@ For detailed setup instructions with screenshots and troubleshooting, see [SETUP
 - **Capacity:** Hundreds of notes
 - **Location:** Browser's extension storage (encrypted by Chrome)
 
-### Gemini API Free Tier
-
-- **15 requests/minute**
-- **1,500 requests/day**
-- **1 million tokens/minute**
-- **More than enough for personal use!**
-
 ## 🎨 Features in Detail
 
 ### Summarize Shiur

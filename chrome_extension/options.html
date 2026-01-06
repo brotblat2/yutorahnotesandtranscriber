@@ -48,17 +48,38 @@
             <!-- How to Get API Key Section -->
             <section class="card">
                 <h2>📖 How to Get Your API Key</h2>
-                <ol class="instructions">
-                    <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
-                    <li>Sign in with your Google account</li>
-                    <li>Click "Create API Key" or "Get API Key"</li>
-                    <li>Select "Create API key in new project" (or use an existing project)</li>
-                    <li>Copy the generated API key</li>
-                    <li>Paste it in the field above and click "Save API Key"</li>
-                </ol>
 
                 <div class="info-box warning">
-                    <p><strong>⚠️ Privacy Notice:</strong></p>
+                    <p><strong>⚠️ IMPORTANT - Do NOT Use School/Institutional Email:</strong></p>
+                    <ul>
+                        <li><strong>Use a personal Gmail account</strong> (not your school or work email)</li>
+                        <li>Institutional accounts often have restrictions that prevent API key creation</li>
+                        <li>If you don't have a personal Gmail, create a free one at <a
+                                href="https://accounts.google.com/signup" target="_blank">gmail.com</a></li>
+                    </ul>
+                </div>
+
+                <ol class="instructions">
+                    <li><strong>Sign in with a PERSONAL Google account</strong> (not school/work email)</li>
+                    <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                    <li>Click the blue <strong>"Create API Key"</strong> button</li>
+                    <li>Select <strong>"Create API key in new project"</strong> (recommended for first-time users)</li>
+                    <li>Your API key will appear - click <strong>"Copy"</strong> to copy it</li>
+                    <li>Paste it in the field above and click <strong>"Save API Key"</strong></li>
+                    <li>Click <strong>"Test Connection"</strong> to verify it works</li>
+                </ol>
+
+                <div class="info-box">
+                    <p><strong>💡 Tips:</strong></p>
+                    <ul>
+                        <li>The Gemini API has a generous free tier - perfect for personal use</li>
+                        <li>Keep your API key private - don't share it with anyone</li>
+                        <li>If you lose your key, you can always create a new one</li>
+                    </ul>
+                </div>
+
+                <div class="info-box warning">
+                    <p><strong>🔒 Privacy Notice:</strong></p>
                     <ul>
                         <li>Your API key is stored locally in your browser's extension storage</li>
                         <li>The extension developer (the person who created this extension) has <strong>NO
@@ -72,30 +93,42 @@
 
             <!-- Custom Prompts Section -->
             <section class="card">
-                <h2>✏️ Custom Prompts</h2>
-                <p>Customize the prompts used to generate notes and transcripts. Leave blank to use default prompts.</p>
-
-                <div class="form-group">
-                    <label for="customNotesPrompt">Custom Notes Prompt:</label>
-                    <textarea id="customNotesPrompt" rows="8"
-                        placeholder="Enter custom prompt for notes generation (optional)"></textarea>
-                    <small>This prompt will be used when generating notes. Hebrew terms will still be preserved in
-                        Hebrew script.</small>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h2 style="margin: 0;">✏️ Custom Prompts</h2>
+                    <button id="togglePrompts" class="btn-secondary" style="font-size: 0.9rem;">
+                        🔧 Advanced Options (Optional)
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label for="customTranscriptPrompt">Custom Transcript Prompt:</label>
-                    <textarea id="customTranscriptPrompt" rows="8"
-                        placeholder="Enter custom prompt for transcript generation (optional)"></textarea>
-                    <small>This prompt will be used when generating transcripts.</small>
-                </div>
+                <div id="promptsSection" style="display: none;">
+                    <div class="info-box">
+                        <p><strong>ℹ️ Most users don't need this!</strong></p>
+                        <p>The extension works great with the default prompts. Only customize if you want to change how
+                            notes or transcripts are generated.</p>
+                    </div>
 
-                <div class="button-group">
-                    <button id="savePrompts" class="btn-primary">Save Prompts</button>
-                    <button id="resetPrompts" class="btn-secondary">Reset to Default</button>
-                </div>
+                    <div class="form-group">
+                        <label for="customNotesPrompt">Custom Notes Prompt (Optional):</label>
+                        <textarea id="customNotesPrompt" rows="8"
+                            placeholder="Leave blank to use default notes prompt"></textarea>
+                        <small>This prompt will be used when generating notes. Hebrew terms will still be preserved in
+                            Hebrew script.</small>
+                    </div>
 
-                <div id="promptStatus" class="status-message"></div>
+                    <div class="form-group">
+                        <label for="customTranscriptPrompt">Custom Transcript Prompt (Optional):</label>
+                        <textarea id="customTranscriptPrompt" rows="8"
+                            placeholder="Leave blank to use default transcript prompt"></textarea>
+                        <small>This prompt will be used when generating transcripts.</small>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="savePrompts" class="btn-primary">Save Prompts</button>
+                        <button id="resetPrompts" class="btn-secondary">Reset to Default</button>
+                    </div>
+
+                    <div id="promptStatus" class="status-message"></div>
+                </div>
             </section>
 
             <!-- Storage Management Section -->
