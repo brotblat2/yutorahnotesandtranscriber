@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load custom prompts
     await loadCustomPrompts();
 
+    // Load key mode and usage stats
+    await loadKeyMode();
+    await updateUsageDisplay();
+
     // Event listeners
     document.getElementById('saveApiKey').addEventListener('click', saveApiKey);
     document.getElementById('testApiKey').addEventListener('click', testApiKey);
@@ -25,6 +29,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('savePrompts').addEventListener('click', saveCustomPrompts);
     document.getElementById('resetPrompts').addEventListener('click', resetCustomPrompts);
     document.getElementById('togglePrompts').addEventListener('click', togglePromptsSection);
+
+    // Mode selection event listeners
+    document.getElementById('saveMode').addEventListener('click', saveKeyMode);
+    document.querySelectorAll('input[name="keyMode"]').forEach(radio => {
+        radio.addEventListener('change', handleModeChange);
+    });
 });
 
 /**
@@ -55,7 +65,10 @@ async function saveApiKey() {
 
     try {
         await Storage.setApiKey(apiKey);
-        showStatus('apiKeyStatus', 'API key saved successfully!', 'success');
+        // Automatically switch to custom mode when saving a custom key
+        await Storage.setKeyMode('custom');
+        document.getElementById('modeCustom').checked = true;
+        showStatus('apiKeyStatus', 'API key saved successfully! Switched to Custom Key mode.', 'success');
     } catch (error) {
         showStatus('apiKeyStatus', 'Error saving API key: ' + error.message, 'error');
     }
@@ -298,5 +311,102 @@ function togglePromptsSection() {
     } else {
         section.style.display = 'none';
         button.textContent = '🔧 Advanced Options (Optional)';
+    }
+}
+
+/**
+ * Load and display current key mode
+ */
+async function loadKeyMode() {
+    try {
+        const mode = await Storage.getKeyMode();
+
+        // Set the radio button
+        if (mode === 'custom') {
+            document.getElementById('modeCustom').checked = true;
+        } else {
+            document.getElementById('modeDefault').checked = true;
+        }
+
+        // Update UI visibility
+        handleModeChange();
+    } catch (error) {
+        console.error('Error loading key mode:', error);
+    }
+}
+
+/**
+ * Handle mode change (show/hide relevant sections)
+ */
+function handleModeChange() {
+    const mode = document.querySelector('input[name="keyMode"]:checked').value;
+    const customKeySection = document.getElementById('customKeySection');
+    const usageStats = document.getElementById('usageStats');
+
+    if (mode === 'custom') {
+        customKeySection.style.display = 'block';
+        usageStats.style.display = 'none';
+    } else {
+        customKeySection.style.display = 'none';
+        usageStats.style.display = 'block';
+        updateUsageDisplay();
+    }
+}
+
+/**
+ * Save key mode selection
+ */
+async function saveKeyMode() {
+    const mode = document.querySelector('input[name="keyMode"]:checked').value;
+
+    try {
+        await Storage.setKeyMode(mode);
+        showStatus('modeStatus', `Switched to ${mode === 'custom' ? 'Custom Key' : 'Default Keys'} mode`, 'success');
+
+        // Update usage display if switching to default mode
+        if (mode === 'default') {
+            await updateUsageDisplay();
+        }
+    } catch (error) {
+        showStatus('modeStatus', 'Error saving mode: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Update usage statistics display
+ */
+async function updateUsageDisplay() {
+    try {
+        const usage = await Storage.getDailyUsage();
+        const DAILY_LIMIT = 10;
+
+        // Update text
+        document.getElementById('usageText').textContent = `${usage.count} / ${DAILY_LIMIT} requests used today`;
+
+        // Update progress bar
+        const percentage = (usage.count / DAILY_LIMIT) * 100;
+        const usageBar = document.getElementById('usageBar');
+        usageBar.style.width = percentage + '%';
+
+        // Change color based on usage
+        usageBar.className = 'usage-bar';
+        if (percentage >= 100) {
+            usageBar.classList.add('danger');
+        } else if (percentage >= 70) {
+            usageBar.classList.add('warning');
+        }
+
+        // Calculate time until reset
+        const resetDate = new Date(usage.resetDate);
+        resetDate.setDate(resetDate.getDate() + 1);
+        resetDate.setHours(0, 0, 0, 0);
+
+        const now = new Date();
+        const hoursUntilReset = Math.ceil((resetDate - now) / (1000 * 60 * 60));
+
+        document.getElementById('resetText').textContent =
+            hoursUntilReset > 0 ? `Resets in ${hoursUntilReset} hour${hoursUntilReset !== 1 ? 's' : ''}` : 'Resets at midnight';
+    } catch (error) {
+        console.error('Error updating usage display:', error);
     }
 }

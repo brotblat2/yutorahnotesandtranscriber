@@ -1,8 +1,8 @@
 // Background service worker for YUTorah Notes Extension
 // Handles API calls, caching, and message passing
 
-// Import storage and API modules
-importScripts('storage.js', 'gemini-api.js');
+// Import config, storage and API modules
+importScripts('config.js', 'storage.js', 'gemini-api.js');
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -66,14 +66,38 @@ async function handleProcessShiur(request, sendResponse) {
             return;
         }
 
-        // Get API key
-        const apiKey = await Storage.getApiKey();
-        if (!apiKey) {
+        // Check if user can make a request (rate limiting)
+        const requestCheck = await Storage.canMakeRequest();
+        if (!requestCheck.allowed) {
+            const resetDate = new Date(requestCheck.usage.resetDate);
+            resetDate.setDate(resetDate.getDate() + 1);
+            const hoursUntilReset = Math.ceil((resetDate - new Date()) / (1000 * 60 * 60));
+
             sendResponse({
                 success: false,
-                error: 'No API key configured. Please set up your Gemini API key in the extension settings.'
+                error: `Daily limit reached (${requestCheck.limit} requests/day). Resets in ~${hoursUntilReset} hours.\n\nFor unlimited access, add your own API key in Settings.`,
+                rateLimitExceeded: true
             });
             return;
+        }
+
+        // Get API key based on mode
+        const mode = await Storage.getKeyMode();
+        let apiKey;
+
+        if (mode === 'custom') {
+            apiKey = await Storage.getApiKey();
+            if (!apiKey) {
+                sendResponse({
+                    success: false,
+                    error: 'No custom API key configured. Please add your API key in Settings or switch to default mode.'
+                });
+                return;
+            }
+        } else {
+            // Use random default key
+            apiKey = getRandomDefaultKey();
+            console.log('Using default API key (rate limited mode)');
         }
 
         // Process the shiur - pass mp3Url directly
@@ -86,6 +110,11 @@ async function handleProcessShiur(request, sendResponse) {
         // Cache the result with title metadata
         const metadata = pageTitle ? { title: pageTitle } : {};
         await Storage.setCachedNotes(cacheKey, content, metadata);
+
+        // Increment usage counter if using default keys
+        if (mode === 'default') {
+            await Storage.incrementDailyUsage();
+        }
 
         sendResponse({
             success: true,

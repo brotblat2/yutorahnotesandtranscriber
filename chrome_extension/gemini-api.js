@@ -1,6 +1,9 @@
 // Gemini API client for YUTorah Notes Extension
 // Refactored for Gemini 2.5 Flash and production robustness
 
+// API keys are loaded from config.js (not committed to git)
+// config.js defines DEFAULT_KEYS array and getRandomDefaultKey() function
+
 const GeminiAPI = {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
 

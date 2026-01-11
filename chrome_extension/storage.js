@@ -254,6 +254,138 @@ const Storage = {
                 }
             });
         });
+    },
+
+    /**
+     * Get API key mode ('default' or 'custom')
+     */
+    async getKeyMode() {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.get(['api_key_mode'], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    // Default to 'default' mode for new users
+                    resolve(result.api_key_mode || 'default');
+                }
+            });
+        });
+    },
+
+    /**
+     * Set API key mode
+     */
+    async setKeyMode(mode) {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.set({ api_key_mode: mode }, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(true);
+                }
+            });
+        });
+    },
+
+    /**
+     * Get daily usage statistics
+     * Returns: { count: number, resetDate: string }
+     */
+    async getDailyUsage() {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.get(['daily_usage_count', 'daily_usage_reset_date'], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    const today = new Date().toISOString().split('T')[0];
+                    const resetDate = result.daily_usage_reset_date || today;
+
+                    // Reset count if it's a new day
+                    if (resetDate !== today) {
+                        resolve({ count: 0, resetDate: today });
+                    } else {
+                        resolve({
+                            count: result.daily_usage_count || 0,
+                            resetDate: resetDate
+                        });
+                    }
+                }
+            });
+        });
+    },
+
+    /**
+     * Increment daily usage count
+     */
+    async incrementDailyUsage() {
+        const usage = await this.getDailyUsage();
+        const today = new Date().toISOString().split('T')[0];
+
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.set({
+                daily_usage_count: usage.count + 1,
+                daily_usage_reset_date: today
+            }, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(usage.count + 1);
+                }
+            });
+        });
+    },
+
+    /**
+     * Reset daily usage count (called when new day detected)
+     */
+    async resetDailyUsage() {
+        const today = new Date().toISOString().split('T')[0];
+
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.set({
+                daily_usage_count: 0,
+                daily_usage_reset_date: today
+            }, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(true);
+                }
+            });
+        });
+    },
+
+    /**
+     * Check if user can make a request based on mode and limits
+     * Returns: { allowed: boolean, reason: string, usage: object }
+     */
+    async canMakeRequest() {
+        const mode = await this.getKeyMode();
+
+        // Custom key mode has no limits
+        if (mode === 'custom') {
+            return { allowed: true, reason: 'custom_key', usage: null };
+        }
+
+        // Default mode has 10 requests per day limit
+        const usage = await this.getDailyUsage();
+        const DAILY_LIMIT = 10;
+
+        if (usage.count >= DAILY_LIMIT) {
+            return {
+                allowed: false,
+                reason: 'rate_limit_exceeded',
+                usage: usage,
+                limit: DAILY_LIMIT
+            };
+        }
+
+        return {
+            allowed: true,
+            reason: 'default_key',
+            usage: usage,
+            limit: DAILY_LIMIT
+        };
     }
 };
 

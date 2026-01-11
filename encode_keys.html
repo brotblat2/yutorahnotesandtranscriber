@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Key Encoder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #3367d6;
+        }
+
+        .output {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #4285f4;
+        }
+
+        .output pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔑 API Key Encoder for YUTorah Notes</h1>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Make sure you're using valid, active Gemini API keys from
+            <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+        </div>
+
+        <div class="input-group">
+            <label for="key1">API Key 1:</label>
+            <input type="text" id="key1" placeholder="AIzaSy...">
+        </div>
+
+        <div class="input-group">
+            <label for="key2">API Key 2:</label>
+            <input type="text" id="key2" placeholder="AIzaSy...">
+        </div>
+
+        <button onclick="encodeKeys()">Encode Keys</button>
+
+        <div id="output" style="display: none;" class="output">
+            <h3>Encoded Keys (Copy this code):</h3>
+            <pre id="encodedCode"></pre>
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>Copy the code above</li>
+                <li>Open <code>chrome_extension/gemini-api.js</code></li>
+                <li>Replace lines 7-9 (the DEFAULT_KEYS array) with the code above</li>
+                <li>Save the file and reload the extension</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function encodeKeys() {
+            const key1 = document.getElementById('key1').value.trim();
+            const key2 = document.getElementById('key2').value.trim();
+
+            if (!key1 || !key2) {
+                alert('Please enter both API keys');
+                return;
+            }
+
+            if (!key1.startsWith('AIzaSy') || !key2.startsWith('AIzaSy')) {
+                alert('Warning: API keys should start with "AIzaSy". Please verify your keys.');
+                return;
+            }
+
+            const encoded1 = btoa(key1);
+            const encoded2 = btoa(key2);
+
+            const code = `const DEFAULT_KEYS = [
+    atob('${encoded1}'),
+    atob('${encoded2}')
+];`;
+
+            document.getElementById('encodedCode').textContent = code;
+            document.getElementById('output').style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

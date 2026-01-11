@@ -317,6 +317,92 @@ button:disabled {
     text-decoration: underline;
 }
 
+/* Radio Options */
+.radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    margin: 12px 0;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.radio-option:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-light);
+}
+
+.radio-option input[type="radio"] {
+    margin-top: 4px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.radio-option label {
+    cursor: pointer;
+    flex: 1;
+    margin: 0;
+}
+
+.radio-option input[type="radio"]:checked+label {
+    color: var(--primary-color);
+}
+
+/* Usage Statistics */
+.usage-stats {
+    margin: 16px 0 16px 30px;
+    padding: 16px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.usage-bar-container {
+    width: 100%;
+    height: 24px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.usage-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.usage-bar.warning {
+    background: linear-gradient(90deg, var(--warning-color), #ff9800);
+}
+
+.usage-bar.danger {
+    background: linear-gradient(90deg, var(--danger-color), #ff5722);
+}
+
+.usage-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.usage-text span:first-child {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 /* Responsive Design */
 @media (max-width: 600px) {
     header h1 {
@@ -333,5 +419,9 @@ button:disabled {
 
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .usage-stats {
+        margin-left: 0;
     }
 }
