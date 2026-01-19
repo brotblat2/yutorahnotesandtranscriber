@@ -237,6 +237,9 @@ if (downloadDocxBtn) {
         // Bold
         html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
+        // Italic
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
         // Blockquotes
         html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
 
@@ -247,12 +250,21 @@ if (downloadDocxBtn) {
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (line.match(/^- /)) {
+            const trimmedLine = line.trim();
+
+            if (trimmedLine.match(/^- /)) {
                 if (!inList) {
                     processedLines.push('<ul>');
                     inList = true;
                 }
-                processedLines.push('<li>' + line.substring(2) + '</li>');
+                processedLines.push('<li>' + trimmedLine.substring(2) + '</li>');
+            } else if (trimmedLine === '') {
+                // Empty line - close list if open, otherwise add paragraph break
+                if (inList) {
+                    processedLines.push('</ul>');
+                    inList = false;
+                }
+                processedLines.push('');
             } else {
                 if (inList) {
                     processedLines.push('</ul>');
@@ -267,13 +279,19 @@ if (downloadDocxBtn) {
 
         html = processedLines.join('\n');
 
-        // Paragraphs
-        html = html.replace(/\n\n/g, '</p><p>');
-        html = html.replace(/\n/g, '<br>');
-        html = '<p>' + html + '</p>';
+        // Convert double line breaks to paragraph breaks
+        html = html.split('\n\n').map(para => {
+            const trimmed = para.trim();
+            // Don't wrap headers, lists, or blockquotes in paragraphs
+            if (trimmed.startsWith('<h') || trimmed.startsWith('<ul>') ||
+                trimmed.startsWith('<blockquote>') || trimmed === '') {
+                return trimmed;
+            }
+            return '<p>' + trimmed.replace(/\n/g, ' ') + '</p>';
+        }).join('\n\n');
 
-        // Clean up
-        html = html.replace(/<p><\/p>/g, '');
+        // Clean up empty paragraphs and extra whitespace
+        html = html.replace(/<p>\s*<\/p>/g, '');
         html = html.replace(/<p>(<h[1-3]>)/g, '$1');
         html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
         html = html.replace(/<p>(<ul>)/g, '$1');
@@ -283,53 +301,74 @@ if (downloadDocxBtn) {
 
         // Create complete HTML document with UTF-8 encoding for Hebrew
         const htmlDoc = `<!DOCTYPE html>
-<html>
+<html dir="auto">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <style>
+        @page {
+            margin: 1in;
+        }
         body {
-            font-family: 'Calibri', 'Arial', sans-serif;
-            font-size: 11pt;
-            line-height: 1.5;
+            font-family: 'Calibri', 'Arial', 'David', sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            direction: ltr;
         }
         h1 {
-            font-size: 18pt;
+            font-size: 20pt;
             font-weight: bold;
             margin-top: 24pt;
             margin-bottom: 12pt;
+            page-break-after: avoid;
         }
         h2 {
-            font-size: 14pt;
+            font-size: 16pt;
             font-weight: bold;
             margin-top: 18pt;
             margin-bottom: 10pt;
+            page-break-after: avoid;
         }
         h3 {
-            font-size: 12pt;
+            font-size: 14pt;
             font-weight: bold;
             margin-top: 14pt;
             margin-bottom: 8pt;
+            page-break-after: avoid;
         }
         p {
             margin-top: 0;
-            margin-bottom: 10pt;
+            margin-bottom: 12pt;
+            text-align: justify;
         }
         ul {
-            margin-top: 0;
-            margin-bottom: 10pt;
+            margin-top: 6pt;
+            margin-bottom: 12pt;
+            padding-left: 24pt;
         }
         li {
-            margin-bottom: 5pt;
+            margin-bottom: 6pt;
+            line-height: 1.5;
         }
         strong {
             font-weight: bold;
         }
-        blockquote {
-            margin-left: 20pt;
-            padding-left: 10pt;
-            border-left: 3pt solid #ccc;
+        em {
             font-style: italic;
+        }
+        blockquote {
+            margin: 12pt 0 12pt 24pt;
+            padding-left: 12pt;
+            border-left: 4pt solid #cccccc;
+            font-style: italic;
+            color: #333333;
+        }
+        /* Hebrew text support */
+        [dir="rtl"] {
+            direction: rtl;
+            text-align: right;
         }
     </style>
 </head>

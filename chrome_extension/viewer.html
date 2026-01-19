@@ -36,13 +36,35 @@
                             <span id="noteType" class="badge">Notes</span>
                             <span id="noteDate" class="date"></span>
                         </div>
+                        <div class="note-tags">
+                            <div id="tagsDisplay" class="tags-display"></div>
+                            <button id="editTagsBtn" class="btn-tag-edit">🏷️ Edit Tags</button>
+                        </div>
                     </div>
                     <div class="note-actions">
                         <button id="copyBtn" class="btn-secondary">📋 Copy</button>
-                        <button id="downloadBtn" class="btn-secondary">💾 Download</button>
+                        <button id="downloadBtn" class="btn-secondary">💾 Download MD</button>
+                        <button id="downloadDocBtn" class="btn-secondary">📄 Download DOC</button>
                         <button id="deleteBtn" class="btn-danger">🗑️ Delete</button>
                     </div>
                 </div>
+
+                <!-- Tag Editor Modal -->
+                <div id="tagEditorModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h3>Edit Tags</h3>
+                        <div class="tag-input-container">
+                            <input type="text" id="tagInput" placeholder="Add a tag...">
+                            <button id="addTagBtn" class="btn-primary">Add</button>
+                        </div>
+                        <div id="currentTags" class="current-tags"></div>
+                        <div class="modal-actions">
+                            <button id="saveTagsBtn" class="btn-primary">Save</button>
+                            <button id="cancelTagsBtn" class="btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="noteContent" class="note-content"></div>
             </div>
 
@@ -50,10 +72,35 @@
             <div id="allNotesView" style="display: none;">
                 <div class="view-header">
                     <h2>All Saved Notes</h2>
-                    <div class="search-box">
-                        <input type="text" id="searchInput" placeholder="Search notes...">
+                    <div class="header-controls">
+                        <button id="mergeExportBtn" class="btn-primary" style="display: none;">
+                            📦 Merge & Export (<span id="selectedCount">0</span>)
+                        </button>
+                        <div class="tag-filter">
+                            <label for="tagFilter">Filter by tag:</label>
+                            <select id="tagFilter">
+                                <option value="">All Tags</option>
+                            </select>
+                        </div>
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="Search notes...">
+                        </div>
                     </div>
                 </div>
+
+                <!-- Merge Panel Modal -->
+                <div id="mergePanelModal" class="modal" style="display: none;">
+                    <div class="modal-content merge-panel">
+                        <h3>Merge & Export Shiurim</h3>
+                        <p class="merge-instructions">Drag to reorder, then export to Word document</p>
+                        <div id="selectedShiurimList" class="selected-shiurim-list"></div>
+                        <div class="modal-actions">
+                            <button id="exportMergedBtn" class="btn-primary">📄 Export to DOC</button>
+                            <button id="cancelMergeBtn" class="btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="notesList" class="notes-list"></div>
                 <div id="emptyState" class="empty-state" style="display: none;">
                     <p>No notes saved yet.</p>

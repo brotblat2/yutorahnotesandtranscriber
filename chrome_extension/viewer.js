@@ -57,12 +57,19 @@ async function loadSingleNote(url, type) {
             document.getElementById('noteDate').textContent = formatDate(timestamp);
         }
 
+        // Load and display tags
+        await loadAndDisplayTags(currentCacheKey);
+
+        // Setup tag editor
+        setupTagEditor(currentCacheKey);
+
         // Render markdown content
         document.getElementById('noteContent').innerHTML = renderMarkdown(content);
 
         // Setup action buttons
         document.getElementById('copyBtn').addEventListener('click', () => copyToClipboard(content));
         document.getElementById('downloadBtn').addEventListener('click', () => downloadNote(content, url, type));
+        document.getElementById('downloadDocBtn').addEventListener('click', () => downloadNoteAsDoc(content, url, type));
         document.getElementById('deleteBtn').addEventListener('click', () => deleteNote(currentCacheKey));
 
         loadingState.style.display = 'none';
@@ -118,6 +125,12 @@ async function loadAllNotes() {
             document.getElementById('searchInput').addEventListener('input', (e) => {
                 filterNotes(e.target.value);
             });
+
+            // Setup tag filter
+            await setupTagFilter(notes);
+
+            // Setup selection checkboxes and merge functionality
+            setupMergeExport();
         }
 
         loadingState.style.display = 'none';
@@ -144,19 +157,30 @@ function createNoteCard(cacheKey, data) {
     const preview = data.content.substring(0, 200).replace(/[#*>\-]/g, '').trim();
     const date = data.timestamp ? formatDate(data.timestamp) : 'Unknown date';
     const title = data.title || `Lecture ${lectureId}`;
+    const tags = data.tags || [];
+
+    const tagsHtml = tags.length > 0
+        ? `<div class="card-tags">${tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('')}</div>`
+        : '';
 
     return `
-        <div class="note-card" data-key="${cacheKey}">
-            <div class="note-card-header">
-                <h3>${title}</h3>
-                <span class="badge ${type}">${type === 'transcript' ? 'Transcript' : 'Notes'}</span>
+        <div class="note-card" data-key="${cacheKey}" data-tags="${tags.join(',')}" data-title="${title}" data-type="${type}">
+            <div class="note-card-select">
+                <input type="checkbox" class="note-select-checkbox" data-key="${cacheKey}">
             </div>
-            <p class="note-preview">${preview}...</p>
-            <div class="note-card-footer">
-                <span class="date">${date}</span>
-                <div class="note-card-actions">
-                    <button class="btn-small btn-view" data-url="${url}" data-type="${type}">View</button>
-                    <button class="btn-small btn-danger btn-delete-card" data-key="${cacheKey}">Delete</button>
+            <div class="note-card-content">
+                <div class="note-card-header">
+                    <h3>${title}</h3>
+                    <span class="badge ${type}">${type === 'transcript' ? 'Transcript' : 'Notes'}</span>
+                </div>
+                ${tagsHtml}
+                <p class="note-preview">${preview}...</p>
+                <div class="note-card-footer">
+                    <span class="date">${date}</span>
+                    <div class="note-card-actions">
+                        <button class="btn-small btn-view" data-url="${url}" data-type="${type}">View</button>
+                        <button class="btn-small btn-danger btn-delete-card" data-key="${cacheKey}">Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -187,18 +211,6 @@ async function deleteNoteCard(cacheKey) {
     }
 }
 
-/**
- * Filter notes based on search query
- */
-function filterNotes(query) {
-    const cards = document.querySelectorAll('.note-card');
-    const lowerQuery = query.toLowerCase();
-
-    cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(lowerQuery) ? 'block' : 'none';
-    });
-}
 
 /**
  * Copy content to clipboard
@@ -234,6 +246,190 @@ async function downloadNote(content, url, type) {
     const a = document.createElement('a');
     a.href = downloadUrl;
     a.download = `${filename}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+}
+
+/**
+ * Download note as DOC file with improved formatting
+ */
+async function downloadNoteAsDoc(content, url, type) {
+    // Get title from storage if available
+    const cacheKey = currentCacheKey;
+    let title;
+
+    if (cacheKey) {
+        title = await getTitle(cacheKey);
+    }
+
+    if (!title) {
+        title = extractTitleFromUrl(url);
+    }
+
+    const filename = sanitizeFilename(`${title}-${type}`);
+
+    // Convert markdown to HTML with proper formatting
+    let html = content;
+
+    // Headers
+    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+    // Bold
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Italic
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Blockquotes
+    html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+    // Lists - properly handle bullet points
+    const lines = html.split('\n');
+    let inList = false;
+    let processedLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+
+        if (trimmedLine.match(/^- /)) {
+            if (!inList) {
+                processedLines.push('<ul>');
+                inList = true;
+            }
+            processedLines.push('<li>' + trimmedLine.substring(2) + '</li>');
+        } else if (trimmedLine === '') {
+            // Empty line - close list if open, otherwise add paragraph break
+            if (inList) {
+                processedLines.push('</ul>');
+                inList = false;
+            }
+            processedLines.push('');
+        } else {
+            if (inList) {
+                processedLines.push('</ul>');
+                inList = false;
+            }
+            processedLines.push(line);
+        }
+    }
+    if (inList) {
+        processedLines.push('</ul>');
+    }
+
+    html = processedLines.join('\n');
+
+    // Convert double line breaks to paragraph breaks
+    html = html.split('\n\n').map(para => {
+        const trimmed = para.trim();
+        // Don't wrap headers, lists, or blockquotes in paragraphs
+        if (trimmed.startsWith('<h') || trimmed.startsWith('<ul>') ||
+            trimmed.startsWith('<blockquote>') || trimmed === '') {
+            return trimmed;
+        }
+        return '<p>' + trimmed.replace(/\n/g, ' ') + '</p>';
+    }).join('\n');
+
+    // Clean up empty paragraphs and extra whitespace
+    html = html.replace(/<p>\s*<\/p>/g, '');
+    html = html.replace(/<p>(<h[1-3]>)/g, '$1');
+    html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<ul>)/g, '$1');
+    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<blockquote>)/g, '$1');
+    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
+
+    // Create complete HTML document with UTF-8 encoding for Hebrew
+    const htmlDoc = `<!DOCTYPE html>
+<html dir="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>
+        @page {
+            margin: 1in;
+        }
+        body {
+            font-family: 'Calibri', 'Arial', 'David', sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            direction: ltr;
+        }
+        h1 {
+            font-size: 20pt;
+            font-weight: bold;
+            margin-top: 24pt;
+            margin-bottom: 12pt;
+            page-break-after: avoid;
+        }
+        h2 {
+            font-size: 16pt;
+            font-weight: bold;
+            margin-top: 18pt;
+            margin-bottom: 10pt;
+            page-break-after: avoid;
+        }
+        h3 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 14pt;
+            margin-bottom: 8pt;
+            page-break-after: avoid;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 12pt;
+            text-align: justify;
+        }
+        ul {
+            margin-top: 6pt;
+            margin-bottom: 12pt;
+            padding-left: 24pt;
+        }
+        li {
+            margin-bottom: 6pt;
+            line-height: 1.5;
+        }
+        strong {
+            font-weight: bold;
+        }
+        em {
+            font-style: italic;
+        }
+        blockquote {
+            margin: 12pt 0 12pt 24pt;
+            padding-left: 12pt;
+            border-left: 4pt solid #cccccc;
+            font-style: italic;
+            color: #333333;
+        }
+        /* Hebrew text support */
+        [dir="rtl"] {
+            direction: rtl;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+${html}
+</body>
+</html>`;
+
+    // Create blob with UTF-8 BOM for proper encoding
+    const blob = new Blob(['\ufeff', htmlDoc], {
+        type: 'application/msword;charset=utf-8'
+    });
+    const downloadUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `${filename}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -352,3 +548,520 @@ function renderMarkdown(markdown) {
 
     return html;
 }
+
+/**
+ * Load and display tags for a note
+ */
+async function loadAndDisplayTags(cacheKey) {
+    const tags = await Storage.getTags(cacheKey);
+    const tagsDisplay = document.getElementById('tagsDisplay');
+
+    if (tags.length > 0) {
+        tagsDisplay.innerHTML = tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('');
+    } else {
+        tagsDisplay.innerHTML = '<span class="no-tags">No tags</span>';
+    }
+}
+
+/**
+ * Setup tag editor modal
+ */
+function setupTagEditor(cacheKey) {
+    const editTagsBtn = document.getElementById('editTagsBtn');
+    const modal = document.getElementById('tagEditorModal');
+    const tagInput = document.getElementById('tagInput');
+    const addTagBtn = document.getElementById('addTagBtn');
+    const currentTagsDiv = document.getElementById('currentTags');
+    const saveTagsBtn = document.getElementById('saveTagsBtn');
+    const cancelTagsBtn = document.getElementById('cancelTagsBtn');
+
+    let currentTags = [];
+
+    // Open modal
+    editTagsBtn.addEventListener('click', async () => {
+        currentTags = await Storage.getTags(cacheKey);
+        renderCurrentTags();
+        modal.style.display = 'flex';
+        tagInput.focus();
+    });
+
+    // Close modal
+    cancelTagsBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        tagInput.value = '';
+    });
+
+    // Add tag
+    const addTag = () => {
+        const tag = tagInput.value.trim();
+        if (tag && !currentTags.includes(tag)) {
+            currentTags.push(tag);
+            renderCurrentTags();
+            tagInput.value = '';
+        }
+    };
+
+    addTagBtn.addEventListener('click', addTag);
+    tagInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addTag();
+        }
+    });
+
+    // Render current tags
+    function renderCurrentTags() {
+        if (currentTags.length === 0) {
+            currentTagsDiv.innerHTML = '<p class="no-tags-message">No tags added yet</p>';
+        } else {
+            currentTagsDiv.innerHTML = currentTags.map((tag, index) => `
+                <span class="tag-badge editable">
+                    ${tag}
+                    <button class="remove-tag" data-index="${index}">×</button>
+                </span>
+            `).join('');
+
+            // Setup remove buttons
+            currentTagsDiv.querySelectorAll('.remove-tag').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const index = parseInt(btn.dataset.index);
+                    currentTags.splice(index, 1);
+                    renderCurrentTags();
+                });
+            });
+        }
+    }
+
+    // Save tags
+    saveTagsBtn.addEventListener('click', async () => {
+        await Storage.setTags(cacheKey, currentTags);
+        await loadAndDisplayTags(cacheKey);
+        modal.style.display = 'none';
+        tagInput.value = '';
+    });
+}
+
+/**
+ * Setup tag filter dropdown
+ */
+async function setupTagFilter(notes) {
+    const tagFilter = document.getElementById('tagFilter');
+    const allTags = await Storage.getAllTags();
+
+    // Populate filter dropdown
+    allTags.forEach(tag => {
+        const option = document.createElement('option');
+        option.value = tag;
+        option.textContent = tag;
+        tagFilter.appendChild(option);
+    });
+
+    // Handle filter change
+    tagFilter.addEventListener('change', (e) => {
+        filterNotesByTag(e.target.value);
+    });
+}
+
+/**
+ * Filter notes by tag
+ */
+function filterNotesByTag(selectedTag) {
+    const cards = document.querySelectorAll('.note-card');
+
+    cards.forEach(card => {
+        if (!selectedTag) {
+            // Show all if no tag selected
+            card.style.display = 'block';
+        } else {
+            const cardTags = card.dataset.tags ? card.dataset.tags.split(',') : [];
+            card.style.display = cardTags.includes(selectedTag) ? 'block' : 'none';
+        }
+    });
+}
+
+/**
+ * Filter notes based on search query (updated to work with tag filter)
+ */
+function filterNotes(query) {
+    const cards = document.querySelectorAll('.note-card');
+    const lowerQuery = query.toLowerCase();
+    const selectedTag = document.getElementById('tagFilter')?.value || '';
+
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const matchesSearch = text.includes(lowerQuery);
+
+        // Check tag filter
+        let matchesTag = true;
+        if (selectedTag) {
+            const cardTags = card.dataset.tags ? card.dataset.tags.split(',') : [];
+            matchesTag = cardTags.includes(selectedTag);
+        }
+
+        card.style.display = (matchesSearch && matchesTag) ? 'block' : 'none';
+    });
+}
+
+/**
+ * Setup merge and export functionality
+ */
+function setupMergeExport() {
+    const mergeExportBtn = document.getElementById('mergeExportBtn');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const mergePanelModal = document.getElementById('mergePanelModal');
+    const selectedShiurimList = document.getElementById('selectedShiurimList');
+    const exportMergedBtn = document.getElementById('exportMergedBtn');
+    const cancelMergeBtn = document.getElementById('cancelMergeBtn');
+
+    let selectedNotes = new Map(); // cacheKey -> note data
+
+    // Handle checkbox changes
+    document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('note-select-checkbox')) {
+            const cacheKey = e.target.dataset.key;
+            const card = e.target.closest('.note-card');
+
+            if (e.target.checked) {
+                // Add to selection
+                selectedNotes.set(cacheKey, {
+                    cacheKey: cacheKey,
+                    title: card.dataset.title,
+                    type: card.dataset.type
+                });
+                card.classList.add('selected');
+            } else {
+                // Remove from selection
+                selectedNotes.delete(cacheKey);
+                card.classList.remove('selected');
+            }
+
+            updateSelectionUI();
+        }
+    });
+
+    // Update selection UI
+    function updateSelectionUI() {
+        const count = selectedNotes.size;
+        selectedCountSpan.textContent = count;
+        mergeExportBtn.style.display = count > 0 ? 'block' : 'none';
+    }
+
+    // Open merge panel
+    mergeExportBtn.addEventListener('click', () => {
+        renderSelectedShiurim();
+        mergePanelModal.style.display = 'flex';
+    });
+
+    // Close merge panel
+    cancelMergeBtn.addEventListener('click', () => {
+        mergePanelModal.style.display = 'none';
+    });
+
+    // Render selected shiurim in merge panel
+    function renderSelectedShiurim() {
+        const items = Array.from(selectedNotes.values());
+        selectedShiurimList.innerHTML = items.map((item, index) => `
+            <div class="merge-item" draggable="true" data-index="${index}" data-key="${item.cacheKey}">
+                <div class="merge-item-drag">⋮⋮</div>
+                <div class="merge-item-content">
+                    <div class="merge-item-title">${item.title}</div>
+                    <span class="badge ${item.type}">${item.type === 'transcript' ? 'Transcript' : 'Notes'}</span>
+                </div>
+                <div class="merge-item-order">#${index + 1}</div>
+            </div>
+        `).join('');
+
+        setupDragAndDrop();
+    }
+
+    // Setup drag and drop for reordering
+    function setupDragAndDrop() {
+        const items = selectedShiurimList.querySelectorAll('.merge-item');
+        let draggedItem = null;
+
+        items.forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                draggedItem = item;
+                item.classList.add('dragging');
+            });
+
+            item.addEventListener('dragend', (e) => {
+                item.classList.remove('dragging');
+                draggedItem = null;
+            });
+
+            item.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(selectedShiurimList, e.clientY);
+                if (afterElement == null) {
+                    selectedShiurimList.appendChild(draggedItem);
+                } else {
+                    selectedShiurimList.insertBefore(draggedItem, afterElement);
+                }
+            });
+        });
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.merge-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Export merged document
+    exportMergedBtn.addEventListener('click', async () => {
+        const orderedItems = [...selectedShiurimList.querySelectorAll('.merge-item')];
+        const orderedKeys = orderedItems.map(item => item.dataset.key);
+
+        await exportMergedDocument(orderedKeys);
+
+        // Close modal and clear selection
+        mergePanelModal.style.display = 'none';
+        clearSelection();
+    });
+
+    function clearSelection() {
+        selectedNotes.clear();
+        document.querySelectorAll('.note-select-checkbox').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.note-card').forEach(card => card.classList.remove('selected'));
+        updateSelectionUI();
+    }
+}
+
+/**
+ * Export merged document
+ */
+async function exportMergedDocument(orderedKeys) {
+    try {
+        // Fetch all note data
+        const notesData = [];
+        for (const cacheKey of orderedKeys) {
+            const content = await Storage.getCachedNotes(cacheKey);
+            const title = await getTitle(cacheKey);
+            const parts = cacheKey.split('_');
+            const type = parts[2];
+
+            notesData.push({
+                cacheKey,
+                title: title || `Lecture ${parts[1]}`,
+                type,
+                content
+            });
+        }
+
+        // Generate merged HTML
+        let mergedHtml = '';
+
+        // Table of Contents
+        mergedHtml += '<h1>Table of Contents</h1>\n';
+        mergedHtml += '<ul>\n';
+        notesData.forEach((note, index) => {
+            mergedHtml += `<li>${index + 1}. ${note.title} (${note.type === 'transcript' ? 'Transcript' : 'Notes'})</li>\n`;
+        });
+        mergedHtml += '</ul>\n';
+        mergedHtml += '<hr style="page-break-after: always; border: none; margin: 24pt 0;">\n\n';
+
+        // Add each shiur
+        notesData.forEach((note, index) => {
+            // Shiur header
+            mergedHtml += `<h1>${index + 1}. ${note.title}</h1>\n`;
+            mergedHtml += `<p style="color: #666; font-style: italic;">${note.type === 'transcript' ? 'Transcript' : 'Notes'}</p>\n\n`;
+
+            // Convert markdown to HTML
+            let html = note.content;
+
+            // Headers (use h2, h3, h4 since h1 is used for shiur title)
+            html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>');
+            html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^# (.*$)/gim, '<h2>$1</h2>');
+
+            // Bold and italic
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+            // Blockquotes
+            html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+            // Lists
+            const lines = html.split('\n');
+            let inList = false;
+            let processedLines = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+
+                if (trimmedLine.match(/^- /)) {
+                    if (!inList) {
+                        processedLines.push('<ul>');
+                        inList = true;
+                    }
+                    processedLines.push('<li>' + trimmedLine.substring(2) + '</li>');
+                } else if (trimmedLine === '') {
+                    if (inList) {
+                        processedLines.push('</ul>');
+                        inList = false;
+                    }
+                    processedLines.push('');
+                } else {
+                    if (inList) {
+                        processedLines.push('</ul>');
+                        inList = false;
+                    }
+                    processedLines.push(line);
+                }
+            }
+            if (inList) {
+                processedLines.push('</ul>');
+            }
+
+            html = processedLines.join('\n');
+
+            // Paragraphs
+            html = html.split('\n\n').map(para => {
+                const trimmed = para.trim();
+                if (trimmed.startsWith('<h') || trimmed.startsWith('<ul>') ||
+                    trimmed.startsWith('<blockquote>') || trimmed === '') {
+                    return trimmed;
+                }
+                return '<p>' + trimmed.replace(/\n/g, ' ') + '</p>';
+            }).join('\n\n');
+
+            // Clean up
+            html = html.replace(/<p>\s*<\/p>/g, '');
+            html = html.replace(/<p>(<h[1-4]>)/g, '$1');
+            html = html.replace(/(<\/h[1-4]>)<\/p>/g, '$1');
+            html = html.replace(/<p>(<ul>)/g, '$1');
+            html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+            html = html.replace(/<p>(<blockquote>)/g, '$1');
+            html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
+
+            mergedHtml += html;
+
+            // Page break between shiurim (except last one)
+            if (index < notesData.length - 1) {
+                mergedHtml += '\n<hr style="page-break-after: always; border: none; margin: 24pt 0;">\n\n';
+            }
+        });
+
+        // Create complete HTML document
+        const htmlDoc = `<!DOCTYPE html>
+<html dir="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>
+        @page {
+            margin: 1in;
+        }
+        body {
+            font-family: 'Calibri', 'Arial', 'David', sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            direction: ltr;
+        }
+        h1 {
+            font-size: 20pt;
+            font-weight: bold;
+            margin-top: 24pt;
+            margin-bottom: 12pt;
+            page-break-after: avoid;
+            color: #1a1a1a;
+        }
+        h2 {
+            font-size: 16pt;
+            font-weight: bold;
+            margin-top: 18pt;
+            margin-bottom: 10pt;
+            page-break-after: avoid;
+        }
+        h3 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 14pt;
+            margin-bottom: 8pt;
+            page-break-after: avoid;
+        }
+        h4 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 12pt;
+            margin-bottom: 6pt;
+            page-break-after: avoid;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 12pt;
+            text-align: justify;
+        }
+        ul {
+            margin-top: 6pt;
+            margin-bottom: 12pt;
+            padding-left: 24pt;
+        }
+        li {
+            margin-bottom: 6pt;
+            line-height: 1.5;
+        }
+        strong {
+            font-weight: bold;
+        }
+        em {
+            font-style: italic;
+        }
+        blockquote {
+            margin: 12pt 0 12pt 24pt;
+            padding-left: 12pt;
+            border-left: 4pt solid #cccccc;
+            font-style: italic;
+            color: #333333;
+        }
+        hr {
+            border: none;
+            border-top: 2pt solid #cccccc;
+            margin: 24pt 0;
+        }
+        /* Hebrew text support */
+        [dir="rtl"] {
+            direction: rtl;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+${mergedHtml}
+</body>
+</html>`;
+
+        // Create and download
+        const blob = new Blob(['\ufeff', htmlDoc], {
+            type: 'application/msword;charset=utf-8'
+        });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `yutorah-merged-${Date.now()}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(`Successfully exported ${notesData.length} shiurim!`);
+    } catch (error) {
+        console.error('Error exporting merged document:', error);
+        alert('Error exporting merged document: ' + error.message);
+    }
+}
+
+

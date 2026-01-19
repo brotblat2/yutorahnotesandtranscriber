@@ -378,7 +378,7 @@ async function saveKeyMode() {
 async function updateUsageDisplay() {
     try {
         const usage = await Storage.getDailyUsage();
-        const DAILY_LIMIT = 10;
+        const DAILY_LIMIT = 3;
 
         // Update text
         document.getElementById('usageText').textContent = `${usage.count} / ${DAILY_LIMIT} requests used today`;

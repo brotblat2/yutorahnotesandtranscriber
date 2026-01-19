@@ -109,11 +109,12 @@ const Storage = {
                     // Filter out non-note items (API key, timestamps, etc.)
                     const notes = {};
                     for (const [key, value] of Object.entries(items)) {
-                        if (key.startsWith('yutorah_') && !key.endsWith('_timestamp') && !key.endsWith('_title')) {
+                        if (key.startsWith('yutorah_') && !key.endsWith('_timestamp') && !key.endsWith('_title') && !key.endsWith('_tags')) {
                             notes[key] = {
                                 content: value,
                                 timestamp: items[`${key}_timestamp`] || null,
-                                title: items[`${key}_title`] || null
+                                title: items[`${key}_title`] || null,
+                                tags: items[`${key}_tags`] || []
                             };
                         }
                     }
@@ -128,11 +129,66 @@ const Storage = {
      */
     async deleteNote(cacheKey) {
         return new Promise((resolve, reject) => {
-            chrome.storage.local.remove([cacheKey, `${cacheKey}_timestamp`], () => {
+            chrome.storage.local.remove([cacheKey, `${cacheKey}_timestamp`, `${cacheKey}_title`, `${cacheKey}_tags`], () => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
                     resolve(true);
+                }
+            });
+        });
+    },
+
+    /**
+     * Get tags for a specific note
+     */
+    async getTags(cacheKey) {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.get([`${cacheKey}_tags`], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(result[`${cacheKey}_tags`] || []);
+                }
+            });
+        });
+    },
+
+    /**
+     * Set tags for a specific note
+     */
+    async setTags(cacheKey, tags) {
+        return new Promise((resolve, reject) => {
+            // Ensure tags is an array of strings
+            const tagArray = Array.isArray(tags) ? tags : [];
+            const cleanedTags = tagArray.map(tag => String(tag).trim()).filter(tag => tag.length > 0);
+
+            chrome.storage.local.set({ [`${cacheKey}_tags`]: cleanedTags }, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(true);
+                }
+            });
+        });
+    },
+
+    /**
+     * Get all unique tags across all notes
+     */
+    async getAllTags() {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.get(null, (items) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    const allTags = new Set();
+                    for (const [key, value] of Object.entries(items)) {
+                        if (key.endsWith('_tags') && Array.isArray(value)) {
+                            value.forEach(tag => allTags.add(tag));
+                        }
+                    }
+                    resolve(Array.from(allTags).sort());
                 }
             });
         });
@@ -367,9 +423,9 @@ const Storage = {
             return { allowed: true, reason: 'custom_key', usage: null };
         }
 
-        // Default mode has 10 requests per day limit
+        // Default mode has 3 requests per day limit
         const usage = await this.getDailyUsage();
-        const DAILY_LIMIT = 10;
+        const DAILY_LIMIT = 3;
 
         if (usage.count >= DAILY_LIMIT) {
             return {
