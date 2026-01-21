@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('viewer.html') });
     });
 
+    document.getElementById('uploadFile').addEventListener('click', () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('upload.html') });
+    });
+
     document.getElementById('openHelp').addEventListener('click', () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('SETUP.md') }); // Or link to online docs
     });

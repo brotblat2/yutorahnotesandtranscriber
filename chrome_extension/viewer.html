@@ -14,6 +14,7 @@
             <div class="header-content">
                 <h1>📝 YUTorah Notes</h1>
                 <div class="header-actions">
+                    <button id="uploadBtn" class="btn-secondary">📤 Upload File</button>
                     <button id="backBtn" class="btn-secondary">← Back</button>
                     <button id="settingsBtn" class="btn-secondary">⚙️ Settings</button>
                 </div>
@@ -94,6 +95,23 @@
                         <h3>Merge & Export Shiurim</h3>
                         <p class="merge-instructions">Drag to reorder, then export to Word document</p>
                         <div id="selectedShiurimList" class="selected-shiurim-list"></div>
+
+                        <!-- Filename Input -->
+                        <div class="filename-input-group" style="margin: 20px 0;">
+                            <label for="mergedFilename" style="display: block; font-weight: 600; margin-bottom: 8px;">
+                                Filename:
+                            </label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="mergedFilename" placeholder="Enter filename (without extension)"
+                                    style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
+                                    value="yutorah-merged">
+                                <span style="color: #666;">.doc</span>
+                            </div>
+                            <small style="color: #666; display: block; margin-top: 4px;">
+                                Leave blank for default: yutorah-merged-[timestamp].doc
+                            </small>
+                        </div>
+
                         <div class="modal-actions">
                             <button id="exportMergedBtn" class="btn-primary">📄 Export to DOC</button>
                             <button id="cancelMergeBtn" class="btn-secondary">Cancel</button>

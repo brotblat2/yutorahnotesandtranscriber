@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "YUTorah Notes",
   "description": "Generate AI-powered notes and transcripts from YUTorah shiurim with one click - completely private and local",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "permissions": [
     "storage"
   ],
@@ -37,7 +37,10 @@
       "resources": [
         "sidebar.html",
         "sidebar.js",
-        "storage.js"
+        "storage.js",
+        "upload.html",
+        "upload.js",
+        "upload.css"
       ],
       "matches": [
         "*://*.yutorah.org/*"

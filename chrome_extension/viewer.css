@@ -127,6 +127,11 @@ main {
     color: #d93025;
 }
 
+.badge.upload {
+    background: #e6f4ea;
+    color: #1e8e3e;
+}
+
 .date {
     color: var(--text-secondary);
     font-size: 0.875rem;

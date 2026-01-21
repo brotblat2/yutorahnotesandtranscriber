@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         chrome.runtime.openOptionsPage();
     });
 
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+        window.location.href = 'upload.html';
+    });
+
     if (url && type) {
         // Single note view
         await loadSingleNote(url, type);
@@ -151,17 +155,34 @@ async function loadAllNotes() {
  */
 function createNoteCard(cacheKey, data) {
     const parts = cacheKey.split('_');
-    const lectureId = parts[1];
-    const type = parts[2];
-    const url = `https://www.yutorah.org/lectures/${lectureId}`;
+    const isUpload = cacheKey.startsWith('upload_');
+
+    let url, title, lectureId, type;
+
+    if (isUpload) {
+        // Uploaded file: upload_[filename]_[type]
+        type = parts[parts.length - 1];
+        const filename = parts.slice(1, -1).join('_');
+        url = `upload://${cacheKey}`;
+        title = data.title || filename;
+    } else {
+        // YUTorah file: yutorah_[id]_[type]
+        lectureId = parts[1];
+        type = parts[2];
+        url = `https://www.yutorah.org/lectures/${lectureId}`;
+        title = data.title || `Lecture ${lectureId}`;
+    }
+
     const preview = data.content.substring(0, 200).replace(/[#*>\-]/g, '').trim();
     const date = data.timestamp ? formatDate(data.timestamp) : 'Unknown date';
-    const title = data.title || `Lecture ${lectureId}`;
     const tags = data.tags || [];
 
     const tagsHtml = tags.length > 0
         ? `<div class="card-tags">${tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('')}</div>`
         : '';
+
+    // Add source badge for uploaded files
+    const sourceBadge = isUpload ? '<span class="badge upload">📤 Uploaded</span>' : '';
 
     return `
         <div class="note-card" data-key="${cacheKey}" data-tags="${tags.join(',')}" data-title="${title}" data-type="${type}">
@@ -171,6 +192,7 @@ function createNoteCard(cacheKey, data) {
             <div class="note-card-content">
                 <div class="note-card-header">
                     <h3>${title}</h3>
+                    ${sourceBadge}
                     <span class="badge ${type}">${type === 'transcript' ? 'Transcript' : 'Notes'}</span>
                 </div>
                 ${tagsHtml}
@@ -1049,9 +1071,20 @@ ${mergedHtml}
         });
         const url = URL.createObjectURL(blob);
 
+        // Get custom filename from input or use default
+        const filenameInput = document.getElementById('mergedFilename');
+        let filename = filenameInput ? filenameInput.value.trim() : '';
+
+        if (!filename) {
+            filename = `yutorah-merged-${Date.now()}`;
+        }
+
+        // Sanitize filename
+        filename = sanitizeFilename(filename);
+
         const a = document.createElement('a');
         a.href = url;
-        a.download = `yutorah-merged-${Date.now()}.doc`;
+        a.download = `${filename}.doc`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

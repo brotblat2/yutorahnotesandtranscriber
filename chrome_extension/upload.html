@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload & Summarize - YUTorah Notes</title>
+    <link rel="stylesheet" href="upload.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>📤 Upload & Summarize</h1>
+                <div class="header-actions">
+                    <button id="viewNotesBtn" class="btn-secondary">📝 View Notes</button>
+                    <button id="settingsBtn" class="btn-secondary">⚙️ Settings</button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Upload Section -->
+            <div id="uploadSection" class="upload-section">
+                <div class="info-card">
+                    <p><strong>📁 Supported Files:</strong> MP3, M4A (audio) • PDF (documents)</p>
+                    <p><strong>📊 File Limits:</strong> Audio up to 100MB • PDF up to 20MB</p>
+                </div>
+
+                <!-- Drag & Drop Zone -->
+                <div id="dropZone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drag & drop your file here</h3>
+                        <p>or</p>
+                        <button id="browseBtn" class="btn-primary">Browse Files</button>
+                        <input type="file" id="fileInput" accept=".mp3,.m4a,.pdf" style="display: none;">
+                        <p class="file-types">Supported: MP3, M4A, PDF</p>
+                    </div>
+                </div>
+
+                <!-- File Info (shown after selection) -->
+                <div id="fileInfo" class="file-info" style="display: none;">
+                    <div class="file-details">
+                        <div class="file-icon">📄</div>
+                        <div class="file-meta">
+                            <div class="file-name" id="fileName">filename.mp3</div>
+                            <div class="file-stats">
+                                <span id="fileSize">0 MB</span>
+                                <span class="separator">•</span>
+                                <span id="fileType">Audio</span>
+                            </div>
+                        </div>
+                        <button id="removeFileBtn" class="btn-remove">✕</button>
+                    </div>
+
+                    <!-- Configuration -->
+                    <div class="config-section">
+                        <div class="form-group">
+                            <label for="titleInput">Title (optional):</label>
+                            <input type="text" id="titleInput" placeholder="Enter a title for this summary">
+                            <small>Leave blank to use filename</small>
+                        </div>
+
+                        <div class="form-group" id="typeSelector">
+                            <label>Summary Type:</label>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="summaryType" value="notes" checked>
+                                    <span>📝 Notes</span>
+                                    <small>Structured summary with key points</small>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="summaryType" value="transcript">
+                                    <span>📄 Transcript</span>
+                                    <small>Verbatim transcription (audio only)</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Process Button -->
+                    <div class="action-buttons">
+                        <button id="processBtn" class="btn-primary btn-large">
+                            🚀 Process File
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing Section -->
+            <div id="processingSection" class="processing-section" style="display: none;">
+                <div class="processing-card">
+                    <div class="spinner"></div>
+                    <h3 id="processingStatus">Uploading file...</h3>
+                    <p id="processingDetails">This may take a few minutes</p>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2>✅ Summary Complete!</h2>
+                    <div class="results-actions">
+                        <button id="viewResultBtn" class="btn-primary">📝 View in Notes</button>
+                        <button id="uploadAnotherBtn" class="btn-secondary">📤 Upload Another</button>
+                    </div>
+                </div>
+
+                <div class="results-preview">
+                    <h3 id="resultTitle">Summary Title</h3>
+                    <div id="resultContent" class="result-content"></div>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div id="errorSection" class="error-section" style="display: none;">
+                <div class="error-card">
+                    <div class="error-icon">⚠️</div>
+                    <h3>Error Processing File</h3>
+                    <p id="errorMessage">An error occurred</p>
+                    <button id="tryAgainBtn" class="btn-primary">Try Again</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="storage.js"></script>
+    <script src="config.js"></script>
+    <script src="gemini-api.js"></script>
+    <script src="upload.js"></script>
+</body>
+
+</html>

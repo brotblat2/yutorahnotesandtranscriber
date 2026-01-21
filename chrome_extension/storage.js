@@ -4,10 +4,17 @@
 const Storage = {
     /**
      * Generates a cache key from the URL and request type
-     * Format: yutorah_{id}_{type}
-     * Example: yutorah_1154805_notes
+     * Format: yutorah_{id}_{type} or upload_{filename}_{type}
+     * Example: yutorah_1154805_notes or upload_myfile_notes
      */
     generateCacheKey(url, requestType = 'notes') {
+        // Check if this is an uploaded file
+        if (url.startsWith('upload://')) {
+            // Return the cache key directly from the URL
+            return url.replace('upload://', '');
+        }
+
+        // YUTorah file - extract lecture ID
         const match = url.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
         if (match) {
             return `yutorah_${match[1]}_${requestType}`;
@@ -109,7 +116,11 @@ const Storage = {
                     // Filter out non-note items (API key, timestamps, etc.)
                     const notes = {};
                     for (const [key, value] of Object.entries(items)) {
-                        if (key.startsWith('yutorah_') && !key.endsWith('_timestamp') && !key.endsWith('_title') && !key.endsWith('_tags')) {
+                        // Include both yutorah_ and upload_ prefixed items
+                        if ((key.startsWith('yutorah_') || key.startsWith('upload_')) &&
+                            !key.endsWith('_timestamp') &&
+                            !key.endsWith('_title') &&
+                            !key.endsWith('_tags')) {
                             notes[key] = {
                                 content: value,
                                 timestamp: items[`${key}_timestamp`] || null,

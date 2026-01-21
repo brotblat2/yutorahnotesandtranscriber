@@ -103,26 +103,33 @@ const GeminiAPI = {
     /**
      * Generate transcript or notes
      */
-    async generateContent(apiKey, fileUri, requestType = 'notes', customPrompts = null) {
-        const model = 'gemini-3-flash-preview';
-        const url = `${this.baseUrl}/models/${model}:generateContent?key=${apiKey}`;
+    async generateContent(apiKey, fileUri, requestType = 'notes', customPrompts = null, mimeType = 'audio/mpeg') {
+        // Try primary model first, fall back to secondary on error
+        const models = ['gemini-3-flash-preview', 'gemini-2.5-flash'];
+        let lastError = null;
 
-        let prompt;
+        for (let i = 0; i < models.length; i++) {
+            const model = models[i];
+            const url = `${this.baseUrl}/models/${model}:generateContent?key=${apiKey}`;
 
-        // Use custom prompts if provided
-        if (customPrompts) {
-            if (requestType === 'transcript' && customPrompts.transcriptPrompt) {
-                prompt = customPrompts.transcriptPrompt;
-            } else if (requestType === 'notes' && customPrompts.notesPrompt) {
-                prompt = customPrompts.notesPrompt;
-            }
-        }
+            try {
+                console.log(`Attempting generation with model: ${model}`);
 
-        // Fall back to default prompts if no custom prompt
-        if (!prompt) {
-            prompt = requestType === 'transcript'
-                ? `Generate a verbatim or near-verbatim transcript of this audio shiur.
+                let prompt;
 
+                // Use custom prompts if provided
+                if (customPrompts) {
+                    if (requestType === 'transcript' && customPrompts.transcriptPrompt) {
+                        prompt = customPrompts.transcriptPrompt;
+                    } else if (requestType === 'notes' && customPrompts.notesPrompt) {
+                        prompt = customPrompts.notesPrompt;
+                    }
+                }
+
+                // Fall back to default prompts if no custom prompt
+                if (!prompt) {
+                    prompt = requestType === 'transcript'
+                        ? `Generate a verbatim or near-verbatim transcript of this audio shiur. You can remove filler words and repetitions.
 Rules:
 - Hebrew terms must be written in Hebrew script.
 - Do not summarize or explain.
@@ -132,8 +139,8 @@ Rules:
 
 If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
 "sorry can't access the audio file"`
-                :
-                `Follow these rules strictly:
+                        :
+                        `Follow these rules strictly:
 
 LANGUAGE REQUIREMENT: Write ALL explanatory content, descriptions, and notes in ENGLISH ONLY.
 
@@ -167,7 +174,9 @@ You MAY rephrase sentences so they are slightly longer, smoother, and less verba
 
 Group closely related points under coherent conceptual headings where appropriate
 
-If sources are mentioned (e.g., Gemara, Rishonim, Acharonim), record them clearly and accurately, but without unnecessary quotation-length reproduction.
+If sources are mentioned (e.g., Gemara, Rishonim, Acharonim), record them clearly and accurately
+
+If it is a classic Talmudic shiur, and a logical argument is made and is plugged back in to explain the sources, record how the argument explains or deals with the source.
 
 Do NOT add:
 
@@ -183,7 +192,7 @@ Aim for thematic clarity over verbatim transcription
 
 Prefer complete, explanatory sentences over fragmented speech patterns
 
-Preserve the shiur’s analytical depth while improving readability and conceptual flow
+Preserve the shiur's analytical depth while improving readability and conceptual flow.
 
 CRITICAL: All notes must be in English except for Hebrew terms, which must appear in Hebrew script only.
 CRITICAL: DO NOT HALLUCINATE. Ensure every point is derived directly from the audio.
@@ -193,56 +202,76 @@ Return ONLY the formatted notes.
 If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
 "sorry can't access the audio file"
 `;
-        }
-
-        const body = {
-            contents: [
-                {
-                    parts: [
-                        {
-                            fileData: {
-                                mimeType: 'audio/mpeg',
-                                fileUri
-                            }
-                        },
-                        { text: prompt }
-                    ]
                 }
-            ],
-            generationConfig: {
-                temperature: 0.2,
-                topP: 0.9,
 
-            },
-            safetySettings: [
-                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' }
-            ]
-        };
+                const body = {
+                    contents: [
+                        {
+                            parts: [
+                                {
+                                    fileData: {
+                                        mimeType: mimeType,
+                                        fileUri
+                                    }
+                                },
+                                { text: prompt }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        temperature: 0.2,
+                        topP: 0.9,
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
+                    },
+                    safetySettings: [
+                        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' }
+                    ]
+                };
 
-        if (!response.ok) {
-            throw new Error(await response.text());
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
+
+                const data = await response.json();
+                const parts = data?.candidates?.[0]?.content?.parts;
+
+                if (!Array.isArray(parts)) {
+                    throw new Error('No content generated by Gemini');
+                }
+
+                const text = parts
+                    .filter(p => typeof p.text === 'string')
+                    .map(p => p.text)
+                    .join('\n');
+
+                console.log(`Successfully generated content with model: ${model}`);
+                return this.cleanFormatting(text);
+
+            } catch (error) {
+                console.error(`Error with model ${model}:`, error.message);
+                lastError = error;
+
+                // If this is not the last model, continue to next
+                if (i < models.length - 1) {
+                    console.log(`Falling back to next model...`);
+                    continue;
+                }
+
+                // If this was the last model, throw the error
+                throw lastError;
+            }
         }
 
-        const data = await response.json();
-        const parts = data?.candidates?.[0]?.content?.parts;
-
-        if (!Array.isArray(parts)) {
-            throw new Error('No content generated by Gemini');
-        }
-
-        const text = parts
-            .filter(p => typeof p.text === 'string')
-            .map(p => p.text)
-            .join('\n');
-
-        return this.cleanFormatting(text);
+        // Should never reach here, but just in case
+        throw lastError || new Error('Failed to generate content with all available models');
     },
 
     /**
