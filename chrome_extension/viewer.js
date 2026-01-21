@@ -72,7 +72,6 @@ async function loadSingleNote(url, type) {
 
         // Setup action buttons
         document.getElementById('copyBtn').addEventListener('click', () => copyToClipboard(content));
-        document.getElementById('downloadBtn').addEventListener('click', () => downloadNote(content, url, type));
         document.getElementById('downloadDocBtn').addEventListener('click', () => downloadNoteAsDoc(content, url, type));
         document.getElementById('deleteBtn').addEventListener('click', () => deleteNote(currentCacheKey));
 
