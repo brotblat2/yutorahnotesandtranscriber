@@ -596,12 +596,15 @@ function setupTagEditor(cacheKey) {
     const currentTagsDiv = document.getElementById('currentTags');
     const saveTagsBtn = document.getElementById('saveTagsBtn');
     const cancelTagsBtn = document.getElementById('cancelTagsBtn');
+    const tagSuggestionsDiv = document.getElementById('tagSuggestions');
+    const suggestedTagsDiv = document.getElementById('suggestedTags');
 
     let currentTags = [];
 
     // Open modal
     editTagsBtn.addEventListener('click', async () => {
         currentTags = await Storage.getTags(cacheKey);
+        await loadTagSuggestions();
         renderCurrentTags();
         modal.style.display = 'flex';
         tagInput.focus();
@@ -613,12 +616,59 @@ function setupTagEditor(cacheKey) {
         tagInput.value = '';
     });
 
+    // Load and display tag suggestions
+    async function loadTagSuggestions() {
+        const allNotes = await Storage.getAllNotes();
+        const allTags = new Set();
+
+        // Collect all unique tags from all notes
+        Object.values(allNotes).forEach(note => {
+            if (note.tags && Array.isArray(note.tags)) {
+                note.tags.forEach(tag => allTags.add(tag));
+            }
+        });
+
+        const uniqueTags = Array.from(allTags).sort();
+
+        if (uniqueTags.length > 0) {
+            tagSuggestionsDiv.style.display = 'block';
+            renderSuggestedTags(uniqueTags);
+        } else {
+            tagSuggestionsDiv.style.display = 'none';
+        }
+    }
+
+    // Render suggested tags
+    function renderSuggestedTags(suggestions) {
+        suggestedTagsDiv.innerHTML = suggestions.map(tag => {
+            const isAdded = currentTags.includes(tag);
+            return `<span class="tag-suggestion ${isAdded ? 'added' : ''}" data-tag="${tag}">${tag}</span>`;
+        }).join('');
+
+        // Add click handlers
+        suggestedTagsDiv.querySelectorAll('.tag-suggestion').forEach(span => {
+            span.addEventListener('click', () => {
+                if (!span.classList.contains('added')) {
+                    const tag = span.dataset.tag;
+                    currentTags.push(tag);
+                    renderCurrentTags();
+                    span.classList.add('added');
+                }
+            });
+        });
+    }
+
     // Add tag
     const addTag = () => {
         const tag = tagInput.value.trim();
         if (tag && !currentTags.includes(tag)) {
             currentTags.push(tag);
             renderCurrentTags();
+            // Update suggestions to show this tag as added
+            const suggestionSpan = suggestedTagsDiv.querySelector(`[data-tag="${tag}"]`);
+            if (suggestionSpan) {
+                suggestionSpan.classList.add('added');
+            }
             tagInput.value = '';
         }
     };
@@ -646,8 +696,14 @@ function setupTagEditor(cacheKey) {
             currentTagsDiv.querySelectorAll('.remove-tag').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const index = parseInt(btn.dataset.index);
+                    const removedTag = currentTags[index];
                     currentTags.splice(index, 1);
                     renderCurrentTags();
+                    // Update suggestions to show this tag as available again
+                    const suggestionSpan = suggestedTagsDiv.querySelector(`[data-tag="${removedTag}"]`);
+                    if (suggestionSpan) {
+                        suggestionSpan.classList.remove('added');
+                    }
                 });
             });
         }
@@ -733,8 +789,43 @@ function setupMergeExport() {
     const selectedShiurimList = document.getElementById('selectedShiurimList');
     const exportMergedBtn = document.getElementById('exportMergedBtn');
     const cancelMergeBtn = document.getElementById('cancelMergeBtn');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const selectionControls = document.querySelector('.selection-controls');
 
     let selectedNotes = new Map(); // cacheKey -> note data
+
+    // Show selection controls
+    if (selectionControls) {
+        selectionControls.style.display = 'flex';
+    }
+
+    // Select all notes
+    selectAllBtn?.addEventListener('click', () => {
+        // Get all visible checkboxes with their cards
+        const visibleCheckboxes = Array.from(document.querySelectorAll('.note-select-checkbox'))
+            .map(checkbox => ({
+                checkbox,
+                card: checkbox.closest('.note-card')
+            }))
+            .filter(({ card }) => card && card.style.display !== 'none' && !card.querySelector('.note-select-checkbox').checked);
+
+        // Sort by timestamp (oldest first)
+        // Note cards are sorted newest first in the display, so we reverse that
+        visibleCheckboxes.reverse();
+
+        // Select them in order (oldest to newest)
+        visibleCheckboxes.forEach(({ checkbox }) => {
+            checkbox.checked = true;
+            const event = new Event('change', { bubbles: true });
+            checkbox.dispatchEvent(event);
+        });
+    });
+
+    // Deselect all notes
+    deselectAllBtn?.addEventListener('click', () => {
+        clearSelection();
+    });
 
     // Handle checkbox changes
     document.addEventListener('change', (e) => {

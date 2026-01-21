@@ -129,13 +129,14 @@ const GeminiAPI = {
                 // Fall back to default prompts if no custom prompt
                 if (!prompt) {
                     prompt = requestType === 'transcript'
-                        ? `Generate a verbatim or near-verbatim transcript of this audio shiur. You can remove filler words and repetitions.
+                        ? `Generate a verbatim transcript of this audio shiur. 
 Rules:
 - Hebrew terms must be written in Hebrew script.
 - Do not summarize or explain.
 - Mark unclear audio as [inaudible].
 - CRITICAL: DO NOT HALLUCINATE. If you do not hear sensible audio, do not make things up.
 - CRITICAL: DO NOT time-stamp. 
+- CRITICAL: MAKE SURE THE ENTIRE DURATION OF THE SHIUR IS TRANSCRIBED. DO NOT stop in the middle.
 
 If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
 "sorry can't access the audio file"`

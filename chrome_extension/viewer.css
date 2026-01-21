@@ -540,6 +540,52 @@ button:active {
     border-color: var(--primary-color);
 }
 
+/* Selection Controls */
+.selection-controls {
+    display: flex;
+    gap: 8px;
+}
+
+/* Tag Suggestions */
+.tag-suggestions {
+    margin: 16px 0;
+    padding: 12px;
+    background: var(--bg-light);
+    border-radius: 6px;
+}
+
+.suggested-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.tag-suggestion {
+    display: inline-block;
+    padding: 6px 12px;
+    background: white;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tag-suggestion:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.tag-suggestion.added {
+    background: var(--border-color);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
 /* Merge & Export Styles */
 .note-card {
     display: flex;
