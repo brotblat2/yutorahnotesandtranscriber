@@ -206,9 +206,14 @@ script.onload = function () {
 
             // Initialize sidebar
             setTimeout(() => {
+                // Extract page title
+                const ogTitleMeta = document.querySelector('meta[property="og:title"]');
+                const pageTitle = ogTitleMeta ? ogTitleMeta.getAttribute('content') : '';
+
                 sendToSidebar('INIT', {
                     type: mode,
-                    url: window.location.href
+                    url: window.location.href,
+                    title: pageTitle
                 });
             }, 500);
         }, 100);

@@ -6,6 +6,7 @@ console.log('Sidebar script loaded');
 let currentContent = '';
 let currentType = '';
 let currentUrl = '';
+let currentTitle = '';
 
 // Listen for messages from content script
 window.addEventListener('message', (event) => {
@@ -47,6 +48,7 @@ function initSidebar(data) {
     console.log('Initializing sidebar with:', data);
     currentType = data.type;
     currentUrl = data.url || window.parent.location.href;
+    currentTitle = data.title || '';
     const badge = document.getElementById('typeBadge');
     if (badge) {
         badge.textContent = data.type === 'transcript' ? 'Transcript' : 'Notes';
@@ -383,9 +385,14 @@ ${html}
         });
         const url = URL.createObjectURL(blob);
 
+        // Create filename from title or fallback to timestamp
+        let filename = currentTitle || `yutorah-${currentType}`.trim();
+        // Sanitize filename - remove invalid characters
+        filename = filename.replace(/[<>:"/\\|?*]/g, '-').replace(/\s+/g, '_').substring(0, 100);
+
         const a = document.createElement('a');
         a.href = url;
-        a.download = `yutorah-${currentType}-${Date.now()}.doc`;
+        a.download = `${filename}.doc`;
         a.click();
 
         URL.revokeObjectURL(url);

@@ -9,7 +9,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const type = params.get('type');
 
     // Event listeners
-    document.getElementById('backBtn').addEventListener('click', () => window.close());
+    document.getElementById('backBtn').addEventListener('click', () => {
+        // If viewing a single note, go back to all notes view
+        if (url && type) {
+            window.location.href = 'viewer.html';
+        } else {
+            // If on all notes view, close the window
+            window.close();
+        }
+    });
+
     document.getElementById('settingsBtn').addEventListener('click', () => {
         chrome.runtime.openOptionsPage();
     });

@@ -185,12 +185,22 @@ function displayFileInfo(file) {
     const fileType = isPDF ? 'PDF Document' : 'Audio File';
     document.getElementById('fileType').textContent = fileType;
 
-    // Show/hide transcript option for audio files
+    // Show/hide options based on file type
+    const ocrOption = document.getElementById('ocrOption');
+    const transcriptOption = document.querySelector('input[value="transcript"]').closest('.radio-option');
+
     if (isPDF) {
-        typeSelector.style.display = 'none';
+        // For PDFs: show Notes and OCR, hide Transcript
+        typeSelector.style.display = 'block';
+        ocrOption.style.display = 'block';
+        transcriptOption.style.display = 'none';
         document.querySelector('input[name="summaryType"][value="notes"]').checked = true;
     } else {
+        // For audio: show Notes and Transcript, hide OCR
         typeSelector.style.display = 'block';
+        ocrOption.style.display = 'none';
+        transcriptOption.style.display = 'block';
+        document.querySelector('input[name="summaryType"][value="notes"]').checked = true;
     }
 
     // Set default title

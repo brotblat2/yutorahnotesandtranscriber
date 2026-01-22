@@ -128,8 +128,8 @@ const GeminiAPI = {
 
                 // Fall back to default prompts if no custom prompt
                 if (!prompt) {
-                    prompt = requestType === 'transcript'
-                        ? `Generate a verbatim transcript of this audio shiur. 
+                    if (requestType === 'transcript') {
+                        prompt = `Generate a verbatim transcript of this audio shiur. 
 Rules:
 - Hebrew terms must be written in Hebrew script.
 - Do not summarize or explain.
@@ -139,9 +139,52 @@ Rules:
 - CRITICAL: MAKE SURE THE ENTIRE DURATION OF THE SHIUR IS TRANSCRIBED. DO NOT stop in the middle.
 
 If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
-"sorry can't access the audio file"`
-                        :
-                        `Follow these rules strictly:
+"sorry can't access the audio file"`;
+                    } else if (requestType === 'ocr') {
+                        prompt = `Extract and format ALL text from this PDF document. Follow these rules strictly:
+
+LANGUAGE REQUIREMENT: Preserve the original language of the text. Hebrew text must remain in Hebrew script, English in English, etc.
+
+LANGUAGE DETECTION:
+- If the document is primarily or entirely in Hebrew (more than 70% Hebrew text), add this line at the very beginning of your output:
+  <div dir="rtl">
+- And add this line at the very end:
+  </div>
+- This ensures proper right-to-left display for Hebrew documents
+
+FORMATTING:
+- Preserve document structure (headers, subheaders, paragraphs, lists, footnotes)
+- Use markdown formatting:
+  - # for main titles
+  - ## for section headers
+  - ### for subsections
+  - **bold** for emphasized text
+  - *italic* for italicized text
+  - > for block quotes
+  - - for bullet points
+  - 1. for numbered lists
+  - [^1] for footnote markers, with footnotes at the end
+
+CONTENT REQUIREMENTS:
+- Extract ALL text from the document - do not skip pages or sections
+- Maintain paragraph breaks and spacing
+- Preserve tables using markdown table syntax
+- Keep footnotes and endnotes with their reference numbers
+- Do NOT add commentary, summaries, or explanations
+- Do NOT translate any text
+- Do NOT skip or omit any content
+
+OUTPUT FORMAT:
+- Return ONLY the extracted and formatted text
+- Use proper markdown syntax throughout
+- Ensure Hebrew text is in Hebrew script
+- Maintain logical reading order
+- For Hebrew-dominant documents, wrap content in <div dir="rtl">...</div>
+
+If the PDF is unreadable, corrupted, or contains no extractable text, respond with exactly:
+"sorry can't extract text from this PDF"`;
+                    } else {
+                        prompt = `Follow these rules strictly:
 
 LANGUAGE REQUIREMENT: Write ALL explanatory content, descriptions, and notes in ENGLISH ONLY.
 
@@ -203,6 +246,7 @@ Return ONLY the formatted notes.
 If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
 "sorry can't access the audio file"
 `;
+                    }
                 }
 
                 const body = {
