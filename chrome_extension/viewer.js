@@ -374,8 +374,10 @@ async function downloadNoteAsDoc(content, url, type) {
     html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
 
     // Create complete HTML document with UTF-8 encoding for Hebrew
+    // Detect if majority is Hebrew for proper text direction
+    const docDirection = isMajorityHebrew(html) ? 'rtl' : 'ltr';
     const htmlDoc = `<!DOCTYPE html>
-<html dir="auto">
+<html dir="${docDirection}">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1074,8 +1076,10 @@ async function exportMergedDocument(orderedKeys) {
         });
 
         // Create complete HTML document
+        // Detect if merged content is majority Hebrew for proper text direction
+        const docDirection = isMajorityHebrew(mergedHtml) ? 'rtl' : 'ltr';
         const htmlDoc = `<!DOCTYPE html>
-<html dir="auto">
+<html dir="${docDirection}">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">

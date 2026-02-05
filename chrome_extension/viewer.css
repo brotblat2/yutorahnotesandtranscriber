@@ -267,6 +267,8 @@ main {
     line-height: 1.6;
     margin-bottom: 16px;
     min-height: 60px;
+    direction: ltr;
+    text-align: left;
 }
 
 .note-card-footer {
