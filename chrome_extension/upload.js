@@ -188,18 +188,21 @@ function displayFileInfo(file) {
     // Show/hide options based on file type
     const ocrOption = document.getElementById('ocrOption');
     const transcriptOption = document.querySelector('input[value="transcript"]').closest('.radio-option');
+    const maamarOption = document.querySelector('input[value="maamar"]').closest('.radio-option');
 
     if (isPDF) {
-        // For PDFs: show Notes and OCR, hide Transcript
+        // For PDFs: show Notes and OCR, hide Transcript and Maamar
         typeSelector.style.display = 'block';
         ocrOption.style.display = 'block';
         transcriptOption.style.display = 'none';
+        maamarOption.style.display = 'none';
         document.querySelector('input[name="summaryType"][value="notes"]').checked = true;
     } else {
-        // For audio: show Notes and Transcript, hide OCR
+        // For audio: show Notes, Transcript, and Maamar, hide OCR
         typeSelector.style.display = 'block';
         ocrOption.style.display = 'none';
         transcriptOption.style.display = 'block';
+        maamarOption.style.display = 'block';
         document.querySelector('input[name="summaryType"][value="notes"]').checked = true;
     }
 

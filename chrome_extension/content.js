@@ -380,11 +380,20 @@ script.onload = function () {
         <path d="M5 9H9V10H5V9Z" fill="currentColor"/>
     `;
 
+    // Hebrew Article Button Icon (Document with Hebrew א)
+    const maamarIcon = `
+        <path d="M4 2C3.45 2 3 2.45 3 3V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V3C13 2.45 12.55 2 12 2H4ZM4 3H12V13H4V3Z" fill="currentColor"/>
+        <path d="M8 5.5L6.5 10H7.2L7.5 9H8.5L8.8 10H9.5L8 5.5ZM7.75 8.5L8 7.5L8.25 8.5H7.75Z" fill="currentColor"/>
+    `;
+
     const summarizeBtn = createButton('Summarize Shiur', 'notes', summarizeIcon, 'yutorah-summarize-btn');
     const transcribeBtn = createButton('Transcribe Shiur', 'transcript', transcribeIcon, 'yutorah-transcribe-btn');
+    const maamarBtn = createButton('מאמר (Hebrew Article)', 'maamar', maamarIcon, 'yutorah-maamar-btn');
 
     container.appendChild(summarizeBtn);
     container.appendChild(transcribeBtn);
+    container.appendChild(maamarBtn);
+
 
     // Insert the buttons into the page
     function insertButtons() {
