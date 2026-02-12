@@ -25,7 +25,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  * Handle shiur processing request
  */
 async function handleProcessShiur(request, sendResponse) {
-    const { mp3Url, type, pageUrl, pageTitle } = request;
+    const { mp3Url, type, pageUrl, pageTitle, metadata } = request;
 
     try {
         if (!mp3Url) {
@@ -38,18 +38,45 @@ async function handleProcessShiur(request, sendResponse) {
 
         // Generate cache key from page URL (if provided) or MP3 URL
         let cacheKey;
+
+        // Helper function to detect site
+        function getSitePrefix(url) {
+            try {
+                const hostname = new URL(url).hostname;
+                if (hostname.includes('yutorah.org')) return 'yutorah';
+                if (hostname.includes('kolhalashon.com')) return 'kolhalashon';
+                return 'unknown';
+            } catch (e) {
+                console.error('Error parsing URL for site prefix:', e);
+                return 'unknown';
+            }
+        }
+
+        const sitePrefix = getSitePrefix(pageUrl || mp3Url);
+
         if (pageUrl) {
-            // Extract lecture ID from page URL for consistent cache key
-            const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
-            if (match) {
-                cacheKey = `yutorah_${match[1]}_${type}`;
+            // Try to extract ID from page URL
+            let pageId;
+
+            if (sitePrefix === 'yutorah') {
+                // YUTorah pattern: /lectures/123456 or /lecture.cfm/123456
+                const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
+                if (match) pageId = match[1];
+            } else if (sitePrefix === 'kolhalashon') {
+                // Kol Halashon pattern: /playShiur/123456
+                const match = pageUrl.match(/\/playShiur\/(\d+)/);
+                if (match) pageId = match[1];
+            }
+
+            if (pageId) {
+                cacheKey = `${sitePrefix}_${pageId}_${type}`;
             } else {
                 // Fallback to MP3-based key
-                cacheKey = `yutorah_${mp3Url.split('/').pop().replace('.mp3', '').replace('.MP3', '')}_${type}`;
+                cacheKey = `${sitePrefix}_${mp3Url.split('/').pop().replace(/\.(mp3|m4a|MP3|M4A)/g, '')}_${type}`;
             }
         } else {
             // Fallback to MP3-based key
-            cacheKey = `yutorah_${mp3Url.split('/').pop().replace('.mp3', '').replace('.MP3', '')}_${type}`;
+            cacheKey = `${sitePrefix}_${mp3Url.split('/').pop().replace(/\.(mp3|m4a|MP3|M4A)/g, '')}_${type}`;
         }
 
         console.log('Using cache key:', cacheKey);
@@ -107,9 +134,16 @@ async function handleProcessShiur(request, sendResponse) {
             type
         );
 
-        // Cache the result with title metadata
-        const metadata = pageTitle ? { title: pageTitle } : {};
-        await Storage.setCachedNotes(cacheKey, content, metadata);
+        // Cache the result with extended metadata from page
+        const storageMetadata = {
+            title: pageTitle,
+            categories: metadata?.categories,
+            references: metadata?.references,
+            venue: metadata?.venue,
+            speaker: metadata?.speaker,
+            seriesInfo: metadata?.seriesInfo
+        };
+        await Storage.setCachedNotes(cacheKey, content, storageMetadata);
 
         // Increment usage counter if using default keys
         if (mode === 'default') {
@@ -129,6 +163,7 @@ async function handleProcessShiur(request, sendResponse) {
         });
     }
 }
+
 
 /**
  * Check if API key is configured

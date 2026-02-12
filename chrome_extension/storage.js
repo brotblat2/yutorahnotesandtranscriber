@@ -14,6 +14,14 @@ const Storage = {
             return url.replace('upload://', '');
         }
 
+        // Kol Halashon file - extract lecture ID
+        if (url.includes('kolhalashon.com')) {
+            const match = url.match(/\/playShiur\/(\d+)/);
+            if (match) {
+                return `kolhalashon_${match[1]}_${requestType}`;
+            }
+        }
+
         // YUTorah file - extract lecture ID
         const match = url.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
         if (match) {
@@ -27,6 +35,15 @@ const Storage = {
      * Returns: https://www.yutorah.org/lectures/{lecture_id}
      */
     normalizeUrl(url) {
+        // Kol Halashon
+        if (url.includes('kolhalashon.com')) {
+            const match = url.match(/\/playShiur\/(\d+)/);
+            if (match) {
+                return `https://www.kolhalashon.com/he/regularSite/playShiur/${match[1]}/-1/0/false`;
+            }
+        }
+
+        // YUTorah
         const match = url.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
         if (match) {
             return `https://www.yutorah.org/lectures/${match[1]}`;
@@ -62,6 +79,39 @@ const Storage = {
             // Store title if provided
             if (metadata.title) {
                 data[`${cacheKey}_title`] = metadata.title;
+            }
+
+            // Store extracted metadata fields
+            if (metadata.categories && metadata.categories.length > 0) {
+                data[`${cacheKey}_categories`] = metadata.categories;
+            }
+            if (metadata.references && metadata.references.length > 0) {
+                data[`${cacheKey}_references`] = metadata.references;
+            }
+            if (metadata.venue) {
+                data[`${cacheKey}_venue`] = metadata.venue;
+            }
+            if (metadata.speaker) {
+                data[`${cacheKey}_speaker`] = metadata.speaker;
+            }
+            if (metadata.seriesInfo) {
+                data[`${cacheKey}_series`] = metadata.seriesInfo;
+            }
+
+            // Auto-generate tags from metadata
+            const autoTags = [];
+            if (metadata.categories) {
+                autoTags.push(...metadata.categories);
+            }
+            if (metadata.venue) {
+                autoTags.push(metadata.venue);
+            }
+            if (metadata.speaker) {
+                autoTags.push(metadata.speaker);
+            }
+            // Remove duplicates and only store if we have tags
+            if (autoTags.length > 0) {
+                data[`${cacheKey}_tags`] = [...new Set(autoTags)];
             }
 
             chrome.storage.local.set(data, () => {
@@ -116,16 +166,26 @@ const Storage = {
                     // Filter out non-note items (API key, timestamps, etc.)
                     const notes = {};
                     for (const [key, value] of Object.entries(items)) {
-                        // Include both yutorah_ and upload_ prefixed items
-                        if ((key.startsWith('yutorah_') || key.startsWith('upload_')) &&
+                        // Include yutorah_, kolhalashon_, and upload_ prefixed items
+                        if ((key.startsWith('yutorah_') || key.startsWith('kolhalashon_') || key.startsWith('upload_')) &&
                             !key.endsWith('_timestamp') &&
                             !key.endsWith('_title') &&
-                            !key.endsWith('_tags')) {
+                            !key.endsWith('_tags') &&
+                            !key.endsWith('_categories') &&
+                            !key.endsWith('_references') &&
+                            !key.endsWith('_venue') &&
+                            !key.endsWith('_speaker') &&
+                            !key.endsWith('_series')) {
                             notes[key] = {
                                 content: value,
                                 timestamp: items[`${key}_timestamp`] || null,
                                 title: items[`${key}_title`] || null,
-                                tags: items[`${key}_tags`] || []
+                                tags: items[`${key}_tags`] || [],
+                                categories: items[`${key}_categories`] || [],
+                                references: items[`${key}_references`] || [],
+                                venue: items[`${key}_venue`] || null,
+                                speaker: items[`${key}_speaker`] || null,
+                                series: items[`${key}_series`] || null
                             };
                         }
                     }
@@ -140,7 +200,17 @@ const Storage = {
      */
     async deleteNote(cacheKey) {
         return new Promise((resolve, reject) => {
-            chrome.storage.local.remove([cacheKey, `${cacheKey}_timestamp`, `${cacheKey}_title`, `${cacheKey}_tags`], () => {
+            chrome.storage.local.remove([
+                cacheKey,
+                `${cacheKey}_timestamp`,
+                `${cacheKey}_title`,
+                `${cacheKey}_tags`,
+                `${cacheKey}_categories`,
+                `${cacheKey}_references`,
+                `${cacheKey}_venue`,
+                `${cacheKey}_speaker`,
+                `${cacheKey}_series`
+            ], () => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -216,7 +286,7 @@ const Storage = {
                 } else {
                     chrome.storage.local.get(null, (items) => {
                         const noteCount = Object.keys(items).filter(
-                            key => key.startsWith('yutorah_') && !key.endsWith('_timestamp')
+                            key => (key.startsWith('yutorah_') || key.startsWith('kolhalashon_')) && !key.endsWith('_timestamp')
                         ).length;
 
                         resolve({
@@ -249,7 +319,7 @@ const Storage = {
             const promises = [];
 
             for (const [key, data] of Object.entries(notes)) {
-                if (key.startsWith('yutorah_')) {
+                if (key.startsWith('yutorah_') || key.startsWith('kolhalashon_')) {
                     promises.push(this.setCachedNotes(key, data.content));
                 }
             }
@@ -268,7 +338,7 @@ const Storage = {
         return new Promise((resolve, reject) => {
             chrome.storage.local.get(null, (items) => {
                 const keysToRemove = Object.keys(items).filter(
-                    key => key.startsWith('yutorah_')
+                    key => key.startsWith('yutorah_') || key.startsWith('kolhalashon_')
                 );
 
                 chrome.storage.local.remove(keysToRemove, () => {
@@ -453,6 +523,47 @@ const Storage = {
             usage: usage,
             limit: DAILY_LIMIT
         };
+    },
+
+    /**
+     * Get all series with their associated shiurim
+     * Returns array of series objects with shiurim arrays
+     */
+    async getAllSeries() {
+        const notes = await this.getAllNotes();
+        const seriesMap = new Map();
+
+        for (const [cacheKey, note] of Object.entries(notes)) {
+            if (note.series) {
+                const seriesID = note.series.seriesID;
+                if (!seriesMap.has(seriesID)) {
+                    seriesMap.set(seriesID, {
+                        seriesID: note.series.seriesID,
+                        seriesName: note.series.seriesName,
+                        seriesURL: note.series.seriesURL,
+                        shiurim: []
+                    });
+                }
+                seriesMap.get(seriesID).shiurim.push({
+                    cacheKey,
+                    title: note.title,
+                    timestamp: note.timestamp
+                });
+            }
+        }
+
+        return Array.from(seriesMap.values());
+    },
+
+    /**
+     * Get notes by series ID
+     * Returns array of notes belonging to a specific series
+     */
+    async getNotesBySeries(seriesID) {
+        const notes = await this.getAllNotes();
+        return Object.entries(notes)
+            .filter(([_, note]) => note.series?.seriesID === seriesID)
+            .map(([cacheKey, note]) => ({ cacheKey, ...note }));
     }
 };
 

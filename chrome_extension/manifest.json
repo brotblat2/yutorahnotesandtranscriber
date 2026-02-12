@@ -2,12 +2,13 @@
   "manifest_version": 3,
   "name": "YUTorah Notes",
   "description": "Generate AI-powered notes and transcripts from YUTorah shiurim with one click - completely private and local",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
     "*://*.yutorah.org/*",
+    "*://*.kolhalashon.com/*",
     "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
@@ -16,7 +17,8 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.yutorah.org/*"
+        "*://*.yutorah.org/*",
+        "*://*.kolhalashon.com/*"
       ],
       "js": [
         "content.js"
@@ -43,7 +45,8 @@
         "upload.css"
       ],
       "matches": [
-        "*://*.yutorah.org/*"
+        "*://*.yutorah.org/*",
+        "*://*.kolhalashon.com/*"
       ]
     }
   ],

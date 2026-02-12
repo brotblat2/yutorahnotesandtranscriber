@@ -37,10 +37,7 @@
                             <span id="noteType" class="badge">Notes</span>
                             <span id="noteDate" class="date"></span>
                         </div>
-                        <div class="note-tags">
-                            <div id="tagsDisplay" class="tags-display"></div>
-                            <button id="editTagsBtn" class="btn-tag-edit">🏷️ Edit Tags</button>
-                        </div>
+
                     </div>
                     <div class="note-actions">
                         <button id="copyBtn" class="btn-secondary">📋 Copy</button>
@@ -49,28 +46,7 @@
                     </div>
                 </div>
 
-                <!-- Tag Editor Modal -->
-                <div id="tagEditorModal" class="modal" style="display: none;">
-                    <div class="modal-content">
-                        <h3>Edit Tags</h3>
-                        <div class="tag-input-container">
-                            <input type="text" id="tagInput" placeholder="Add a tag...">
-                            <button id="addTagBtn" class="btn-primary">Add</button>
-                        </div>
-                        <!-- Tag Suggestions -->
-                        <div id="tagSuggestions" class="tag-suggestions" style="display: none;">
-                            <label
-                                style="font-size: 0.875rem; color: #5f6368; margin-bottom: 8px; display: block;">Previously
-                                used tags (click to add):</label>
-                            <div id="suggestedTags" class="suggested-tags"></div>
-                        </div>
-                        <div id="currentTags" class="current-tags"></div>
-                        <div class="modal-actions">
-                            <button id="saveTagsBtn" class="btn-primary">Save</button>
-                            <button id="cancelTagsBtn" class="btn-secondary">Cancel</button>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div id="noteContent" class="note-content"></div>
             </div>
@@ -87,12 +63,7 @@
                         <button id="mergeExportBtn" class="btn-primary" style="display: none;">
                             📦 Merge & Export (<span id="selectedCount">0</span>)
                         </button>
-                        <div class="tag-filter">
-                            <label for="tagFilter">Filter by tag:</label>
-                            <select id="tagFilter">
-                                <option value="">All Tags</option>
-                            </select>
-                        </div>
+
                         <div class="search-box">
                             <input type="text" id="searchInput" placeholder="Search notes...">
                         </div>

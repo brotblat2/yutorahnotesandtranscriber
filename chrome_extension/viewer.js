@@ -70,14 +70,24 @@ async function loadSingleNote(url, type) {
             document.getElementById('noteDate').textContent = formatDate(timestamp);
         }
 
-        // Load and display tags
-        await loadAndDisplayTags(currentCacheKey);
+        // Tag UI has been removed
+        // await loadAndDisplayTags(currentCacheKey);
 
-        // Setup tag editor
-        setupTagEditor(currentCacheKey);
+        // Tag editor UI has been removed
+        // setupTagEditor(currentCacheKey);
 
         // Render markdown content
-        document.getElementById('noteContent').innerHTML = renderMarkdown(content);
+        const noteContentElement = document.getElementById('noteContent');
+        noteContentElement.innerHTML = renderMarkdown(content);
+
+        // Apply RTL direction if content is majority Hebrew
+        if (isMajorityHebrew(content)) {
+            noteContentElement.style.direction = 'rtl';
+            noteContentElement.style.textAlign = 'right';
+        } else {
+            noteContentElement.style.direction = 'ltr';
+            noteContentElement.style.textAlign = 'left';
+        }
 
         // Setup action buttons
         document.getElementById('copyBtn').addEventListener('click', () => copyToClipboard(content));
@@ -138,8 +148,8 @@ async function loadAllNotes() {
                 filterNotes(e.target.value);
             });
 
-            // Setup tag filter
-            await setupTagFilter(notes);
+            // Tag filter UI has been removed
+            // await setupTagFilter(notes);
 
             // Setup selection checkboxes and merge functionality
             setupMergeExport();
@@ -164,6 +174,8 @@ async function loadAllNotes() {
 function createNoteCard(cacheKey, data) {
     const parts = cacheKey.split('_');
     const isUpload = cacheKey.startsWith('upload_');
+    const isKolHalashon = cacheKey.startsWith('kolhalashon_');
+    const isYuTorah = cacheKey.startsWith('yutorah_');
 
     let url, title, lectureId, type;
 
@@ -173,6 +185,13 @@ function createNoteCard(cacheKey, data) {
         const filename = parts.slice(1, -1).join('_');
         url = `upload://${cacheKey}`;
         title = data.title || filename;
+    } else if (isKolHalashon) {
+        // Kol Halashon: kolhalashon_[id]_[type]
+        lectureId = parts[1];
+        type = parts[2];
+        // Construct Kol Halashon URL
+        url = `https://www.kolhalashon.com/he/regularSite/playShiur/${lectureId}/-1/0/false`;
+        title = data.title || `קול הלשון ${lectureId}`;
     } else {
         // YUTorah file: yutorah_[id]_[type]
         lectureId = parts[1];
@@ -181,29 +200,26 @@ function createNoteCard(cacheKey, data) {
         title = data.title || `Lecture ${lectureId}`;
     }
 
-    const preview = data.content.substring(0, 200).replace(/[#*>\-]/g, '').trim();
+    const preview = data.content.substring(0, 200).replace(/[#*>\\-]/g, '').trim();
     const date = data.timestamp ? formatDate(data.timestamp) : 'Unknown date';
-    const tags = data.tags || [];
 
-    const tagsHtml = tags.length > 0
-        ? `<div class="card-tags">${tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('')}</div>`
-        : '';
+    // Append speaker name to title if available
+    const displayTitle = data.speaker ? `${title} - ${data.speaker}` : title;
 
     // Add source badge for uploaded files
     const sourceBadge = isUpload ? '<span class="badge upload">📤 Uploaded</span>' : '';
 
     return `
-        <div class="note-card" data-key="${cacheKey}" data-tags="${tags.join(',')}" data-title="${title}" data-type="${type}">
+        <div class="note-card" data-key="${cacheKey}" data-title="${title}" data-type="${type}">
             <div class="note-card-select">
                 <input type="checkbox" class="note-select-checkbox" data-key="${cacheKey}">
             </div>
             <div class="note-card-content">
                 <div class="note-card-header">
-                    <h3>${title}</h3>
+                    <h3>${displayTitle}</h3>
                     ${sourceBadge}
-                    <span class="badge ${type}">${type === 'transcript' ? 'Transcript' : 'Notes'}</span>
+                    <span class="badge ${type}">${type === 'transcript' ? 'Transcript' : type === 'maamar' ? 'מאמר' : 'Notes'}</span>
                 </div>
-                ${tagsHtml}
                 <p class="note-preview">${preview}...</p>
                 <div class="note-card-footer">
                     <span class="date">${date}</span>

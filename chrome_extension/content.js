@@ -115,6 +115,19 @@ script.onload = function () {
         }
     }
 
+    // Helper function to detect site for cache key generation
+    function getSitePrefix(url) {
+        try {
+            const hostname = new URL(url).hostname;
+            if (hostname.includes('yutorah.org')) return 'yutorah';
+            if (hostname.includes('kolhalashon.com')) return 'kolhalashon';
+            return 'unknown';
+        } catch (e) {
+            console.error('Error parsing URL for site prefix:', e);
+            return 'unknown';
+        }
+    }
+
     // Handle delete note request from sidebar
     async function handleDeleteNote(data) {
         console.log('Handling delete note:', data);
@@ -122,12 +135,26 @@ script.onload = function () {
             // Use Storage API directly to avoid extension context issues
             const pageUrl = data.url || window.location.href;
 
-            // Generate cache key
-            const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
-            if (!match) {
-                throw new Error('Invalid URL format');
+            // Detect site and generate cache key
+            const sitePrefix = getSitePrefix(pageUrl);
+            let lectureId;
+
+            if (sitePrefix === 'yutorah') {
+                // YUTorah pattern: /lectures/123456 or /lecture.cfm/123456
+                const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
+                if (match) lectureId = match[1];
+            } else if (sitePrefix === 'kolhalashon') {
+                // Kol Halashon pattern: /playShiur/123456
+                const match = pageUrl.match(/\/playShiur\/(\d+)/);
+                if (match) lectureId = match[1];
             }
-            const cacheKey = `yutorah_${match[1]}_${data.type}`;
+
+            if (!lectureId) {
+                throw new Error('Could not extract lecture ID from URL');
+            }
+
+            const cacheKey = `${sitePrefix}_${lectureId}_${data.type}`;
+            console.log('Deleting cache key:', cacheKey);
 
             // Delete from chrome.storage.local directly
             await new Promise((resolve, reject) => {
@@ -157,11 +184,27 @@ script.onload = function () {
             const pageUrl = data.url || window.location.href;
 
             // Generate cache key
-            const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
-            if (!match) {
+            let cacheKey;
+
+            // Check for Kol Halashon
+            if (pageUrl.includes('kolhalashon.com')) {
+                const match = pageUrl.match(/\/playShiur\/(\d+)/);
+                if (match) {
+                    cacheKey = `kolhalashon_${match[1]}_${data.type}`;
+                }
+            }
+
+            // Check for YUTorah if not found yet
+            if (!cacheKey) {
+                const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
+                if (match) {
+                    cacheKey = `yutorah_${match[1]}_${data.type}`;
+                }
+            }
+
+            if (!cacheKey) {
                 throw new Error('Invalid URL format');
             }
-            const cacheKey = `yutorah_${match[1]}_${data.type}`;
 
             // Delete from chrome.storage.local directly
             await new Promise((resolve, reject) => {
@@ -171,6 +214,7 @@ script.onload = function () {
                     } else {
                         resolve(true);
                     }
+
                 });
             });
 
@@ -287,6 +331,41 @@ script.onload = function () {
                 }
             }
 
+            // Strategy 3: Look for video.js player (for Kol Halashon)
+            if (!mp3Url) {
+                const video = document.querySelector('video.video-js, video[data-setup]');
+                if (video) {
+                    // Check video src attribute
+                    const videoSrc = video.getAttribute('src');
+                    if (videoSrc) {
+                        mp3Url = new URL(videoSrc, window.location.href).href;
+                        console.log('Found media via video tag:', mp3Url);
+                    } else {
+                        // Check source elements
+                        const source = video.querySelector('source');
+                        if (source) {
+                            const sourceSrc = source.getAttribute('src');
+                            if (sourceSrc) {
+                                mp3Url = new URL(sourceSrc, window.location.href).href;
+                                console.log('Found media via video source:', mp3Url);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Strategy 4: Kol Halashon API pattern
+            // URL pattern: https://www.kolhalashon.com/he/regularSite/playShiur/41679531/-1/0/false
+            // MP3 API: https://www.kolhalashon.com:443/api/files/GetMp3FileToPlay/41679531
+            if (!mp3Url && window.location.hostname.includes('kolhalashon.com')) {
+                const match = window.location.pathname.match(/\/playShiur\/(\d+)/);
+                if (match) {
+                    const shiurId = match[1];
+                    mp3Url = `https://www.kolhalashon.com/api/files/GetMp3FileToPlay/${shiurId}`;
+                    console.log('Constructed Kol Halashon MP3 URL:', mp3Url);
+                }
+            }
+
             if (!mp3Url) {
                 sendToSidebar('ERROR', {
                     message: 'Could not find MP3 file on this page. Make sure you are on a shiur page with audio.'
@@ -296,6 +375,114 @@ script.onload = function () {
 
             console.log('Final MP3 URL:', mp3Url);
 
+            // Extract rich metadata from page (site-specific)
+            function extractPageMetadata() {
+                const metadata = {
+                    categories: [],
+                    references: [],
+                    venue: null,
+                    speaker: null,
+                    seriesInfo: null
+                };
+
+                const isKolHalashon = window.location.hostname.includes('kolhalashon.com');
+                const isYuTorah = window.location.hostname.includes('yutorah.org');
+
+                if (isYuTorah) {
+                    // YUTorah-specific metadata extraction
+
+                    // Extract categories from .postedin links
+                    const categoryLinks = document.querySelectorAll('a.postedin');
+                    categoryLinks.forEach(link => {
+                        const categoryName = link.textContent.trim();
+                        if (categoryName) {
+                            metadata.categories.push(categoryName);
+                        }
+                    });
+
+                    // Extract gemara references from links containing /daf/
+                    const refLinks = document.querySelectorAll('a[href*="/daf/"]');
+                    refLinks.forEach(link => {
+                        const refText = link.textContent.trim();
+                        if (refText && !metadata.references.includes(refText)) {
+                            metadata.references.push(refText);
+                        }
+                    });
+
+                    // Extract venue - look for common venue patterns
+                    const venueSelectors = [
+                        '[itemprop="location"] [itemprop="name"]',
+                        '.venue-name',
+                        '[itemprop="address"]'
+                    ];
+                    for (const selector of venueSelectors) {
+                        const venueElement = document.querySelector(selector);
+                        if (venueElement) {
+                            metadata.venue = venueElement.textContent.trim();
+                            break;
+                        }
+                    }
+
+                    // Extract speaker from schema.org markup or page structure
+                    const speakerSelectors = [
+                        '[itemprop="performer"] [itemprop="name"]',
+                        '[itemprop="author"] [itemprop="name"]',
+                        '.speaker-name'
+                    ];
+                    for (const selector of speakerSelectors) {
+                        const speakerElement = document.querySelector(selector);
+                        if (speakerElement) {
+                            metadata.speaker = speakerElement.textContent.trim();
+                            break;
+                        }
+                    }
+
+                    // Extract series information from lecturePlayerData if available
+                    try {
+                        if (typeof window.lecturePlayerData !== 'undefined' &&
+                            window.lecturePlayerData?.postedInSeries?.length > 0) {
+                            const series = window.lecturePlayerData.postedInSeries[0];
+                            metadata.seriesInfo = {
+                                seriesID: series.seriesID,
+                                seriesName: series.seriesName,
+                                seriesURL: series.href
+                            };
+                        }
+                    } catch (e) {
+                        console.log('Could not extract series info:', e);
+                    }
+                } else if (isKolHalashon) {
+                    // Kol Halashon-specific metadata extraction
+                    // Note: Kol Halashon uses a different page structure
+                    // We'll extract what we can from the page title and any visible elements
+
+                    // Try to extract speaker from page title or meta tags
+                    const pageTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || document.title;
+
+                    // Kol Halashon titles often follow pattern: "Speaker - Topic"
+                    if (pageTitle && pageTitle.includes(' - ')) {
+                        const parts = pageTitle.split(' - ');
+                        if (parts.length >= 2) {
+                            metadata.speaker = parts[0].trim();
+                            // The rest could be topic/category
+                            metadata.categories.push(parts.slice(1).join(' - ').trim());
+                        }
+                    }
+
+                    // Try to find speaker info in page content
+                    // Kol Halashon may have speaker info in specific elements
+                    const speakerElement = document.querySelector('.speaker-name, .lecturer-name, [class*="speaker"]');
+                    if (speakerElement && !metadata.speaker) {
+                        metadata.speaker = speakerElement.textContent.trim();
+                    }
+                }
+
+                console.log('Extracted metadata:', metadata);
+                return metadata;
+            }
+
+            const pageMetadata = extractPageMetadata();
+
             // Extract page title from og:title meta tag
             let pageTitle = null;
             const ogTitleMeta = document.querySelector('meta[property="og:title"]');
@@ -303,6 +490,7 @@ script.onload = function () {
                 pageTitle = ogTitleMeta.getAttribute('content');
                 console.log('Page title:', pageTitle);
             }
+
 
             // Update progress
             sendToSidebar('PROGRESS', {
@@ -320,9 +508,11 @@ script.onload = function () {
                         mp3Url: mp3Url,
                         pageUrl: window.location.href,
                         pageTitle: pageTitle,
+                        metadata: pageMetadata,
                         type: mode
                     },
                     (response) => {
+
                         if (chrome.runtime.lastError) {
                             reject(new Error(chrome.runtime.lastError.message));
                         } else {

@@ -77,6 +77,35 @@ CONTENT REQUIREMENTS:
 If the PDF is unreadable, corrupted, or contains no extractable text, respond with exactly:
 "sorry can't extract text from this PDF"`,
 
+    kol_halashon_notes: `Follow these rules strictly:
+Take extensive notes of this audio file.
+
+LANGUAGE STYLE: Write in "Yeshivish" style - English sentences naturally integrating Hebrew/Aramaic terms.
+Example: "If a husband claims he paid the כתובה while the wife still holds the document, he is not believed due to the principle of שטרך בידי מאי בעי."
+
+FORMATTING:
+- Use ONLY markdown syntax.
+- **Bold** key concepts, halakhic categories, and names of Rishonim/Acharonim.
+- Use bullet points for arguments and steps.
+- ALL hebrew terms must be in hebrew script.
+
+CONTENT FOCUS:
+1. **The Flow (המהלך):** Clearly trace the logical progression of the shiur. How does one step lead to the next?
+2. **Chidushim (חידושים):** Explicitly highlight novel insights or creative interpretations. Use a section header or bold text to mark them.
+3. **Arguments & Proofs:** Detail the shakla v'tarya (give and take).
+
+Structure:
+- ## Topic / Sugya
+- ### Section Headers (use Hebrew or English)
+- **Chidush:** [The novel point]
+
+Do NOT add:
+- Introductions or summaries.
+- Timestamps.
+- English translation of Hebrew/Aramaic terms.
+
+If you cannot access the audio, respond: "sorry can't access the audio file"`,
+
     notes: `Follow these rules strictly:
 Take extensive notes of this audio file.
 
@@ -228,11 +257,15 @@ const GeminiAPI = {
                         prompt = DEFAULT_PROMPTS.maamar;
                     } else if (requestType === 'ocr') {
                         prompt = DEFAULT_PROMPTS.ocr;
+                    } else if (requestType === 'kol_halashon_notes') {
+                        prompt = DEFAULT_PROMPTS.kol_halashon_notes;
                     } else {
                         // Default to notes
                         prompt = DEFAULT_PROMPTS.notes;
                     }
                 }
+
+                console.log(`Sending request with prompt type: ${requestType}`);
 
                 const body = {
                     contents: [{
@@ -482,7 +515,16 @@ const GeminiAPI = {
      * @returns {string} Generated content
      */
     async processShiurFromUrl(apiKey, mp3Url, requestType = 'notes', progressCallback = null) {
-        console.log('Downloading audio from:', mp3Url);
+        console.log('Processing shiur from URL:', mp3Url);
+
+        // Determine prompt type
+        let effectiveRequestType = requestType;
+        if (requestType === 'notes' && mp3Url.includes('kolhalashon.com')) {
+            console.log('Detected Kol Halashon URL, using specialized prompt');
+            effectiveRequestType = 'kol_halashon_notes';
+        }
+
+        console.log('Downloading audio...');
         const blob = await this.downloadMP3(mp3Url);
 
         const fileSizeMB = blob.size / 1024 / 1024;
@@ -498,7 +540,7 @@ const GeminiAPI = {
         console.log('Uploading to Gemini...');
         const file = await this.uploadFile(apiKey, blob);
 
-        console.log('Generating content...');
+        console.log('Generating content with type:', effectiveRequestType);
 
         let customPrompts = null;
         if (typeof Storage !== 'undefined' && Storage.getCustomPrompts) {
@@ -509,7 +551,7 @@ const GeminiAPI = {
             }
         }
 
-        const result = await this.generateContent(apiKey, file.uri, requestType, customPrompts);
+        const result = await this.generateContent(apiKey, file.uri, effectiveRequestType, customPrompts);
         console.log('Processing complete');
         return result;
     }
