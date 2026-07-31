@@ -4,24 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YUTorah Notes - Settings</title>
+    <title>Shiur AI Assistant - Settings</title>
     <link rel="stylesheet" href="options.css">
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>⚙️ YUTorah Notes Settings</h1>
+            <h1>⚙️ Shiur AI Assistant Settings</h1>
             <p class="subtitle">Configure your extension to generate AI-powered notes from YUTorah shiurim</p>
         </header>
 
         <main>
             <!-- API Key Section -->
             <section class="card">
-                <h2>🔑 API Key Configuration</h2>
+                <div class="api-key-heading">
+                    <h2>🔑 API Key Configuration</h2>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Get a free Gemini API key</a>
+                </div>
 
                 <div class="info-box warning">
                     <p><strong>💡 Recommended: Use Your Own API Key</strong></p>
+                    <p>An API key is a private, password-like code from Google that lets this extension use Gemini on
+                        your behalf. It is <strong>not</strong> your Google password.</p>
                     <p>For the best experience with unlimited requests and full privacy, we strongly recommend using
                         your own free Gemini API key.</p>
                     <p>The default mode is provided for <strong>demo and basic use only</strong> (3 requests/day
@@ -67,20 +72,21 @@
                 <!-- Custom API Key Input (shown when custom mode is selected) -->
                 <div id="customKeySection" style="display: none;">
                     <div class="info-box">
-                        <p><strong>🔒 Privacy Guarantee:</strong></p>
+                        <p><strong>🔒 What happens when you add a key:</strong></p>
                         <p>Your API key is stored <strong>locally in your browser only</strong>. The extension developer
-                            has <strong>NO ACCESS</strong> to your key.</p>
+                            has <strong>NO ACCESS</strong> to your key. The key is used only to send your requests
+                            directly to Google's Gemini service.</p>
                     </div>
 
                     <div class="form-group">
-                        <label for="apiKey">Your Gemini API Key:</label>
+                        <label for="apiKey">Paste your Gemini API key:</label>
                         <div class="input-group">
                             <input type="password" id="apiKey" placeholder="Enter your Gemini API key"
                                 autocomplete="off">
                             <button id="toggleApiKey" class="btn-secondary" title="Show/Hide API Key">👁️</button>
                         </div>
-                        <small>Get your free API key from <a href="https://aistudio.google.com/app/apikey"
-                                target="_blank">Google AI Studio</a></small>
+                        <small>Paste the long code Google gives you here — not your Google password. Get a free key
+                            from <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</small>
                     </div>
 
                     <div class="button-group">
@@ -101,7 +107,13 @@
 
             <!-- How to Get API Key Section -->
             <section class="card">
-                <h2>📖 How to Get Your API Key</h2>
+                <h2>📖 What Is an API Key, and How Do I Get One?</h2>
+
+                <div class="info-box">
+                    <p><strong>Think of an API key as a private access pass.</strong></p>
+                    <p>It tells Google that the request is yours, so Gemini can create notes and transcripts for you.
+                        You only need to create it once, then paste it into the box above.</p>
+                </div>
 
                 <div class="info-box warning">
                     <p><strong>⚠️ IMPORTANT - Do NOT Use School/Institutional Email:</strong></p>
@@ -115,12 +127,12 @@
 
                 <ol class="instructions">
                     <li><strong>Sign in with a PERSONAL Google account</strong> (not school/work email)</li>
-                    <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
-                    <li>Click the blue <strong>"Create API Key"</strong> button</li>
+                    <li>Open <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                    <li>Click <strong>"Create API Key"</strong></li>
                     <li>Select <strong>"Create API key in new project"</strong> (recommended for first-time users)</li>
-                    <li>Your API key will appear - click <strong>"Copy"</strong> to copy it</li>
-                    <li>Paste it in the field above and click <strong>"Save API Key"</strong></li>
-                    <li>Click <strong>"Test Connection"</strong> to verify it works</li>
+                    <li>When the long code appears, click <strong>"Copy"</strong></li>
+                    <li>Return here, paste the code in the field above, and click <strong>"Save API Key"</strong></li>
+                    <li>Click <strong>"Test Connection"</strong>. A success message means you are ready.</li>
                 </ol>
 
                 <div class="info-box">
@@ -216,7 +228,7 @@
             <!-- About Section -->
             <section class="card">
                 <h2>ℹ️ About</h2>
-                <p><strong>YUTorah Notes</strong> v2.0.0</p>
+                <p><strong>Shiur AI Assistant</strong> v2.0.0</p>
                 <p>Generate AI-powered notes and transcripts from YUTorah shiurim with one click.</p>
                 <p>This extension is completely private - all processing happens between your browser and Google's
                     Gemini API.</p>

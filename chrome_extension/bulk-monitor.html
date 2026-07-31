@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Queue Monitor - Shiur AI Assistant</title>
+    <link rel="stylesheet" href="bulk-monitor.css">
+</head>
+<body>
+    <main class="monitor-shell">
+        <header class="monitor-header">
+            <div>
+                <p class="monitor-kicker">Shiur AI Assistant</p>
+                <h1>Bulk Queue Monitor</h1>
+                <p class="monitor-subtitle">View and manage all queues running in the background.</p>
+            </div>
+            <button id="refresh" class="monitor-button" type="button">Refresh</button>
+        </header>
+        <div id="summary" class="monitor-summary">Loading queues...</div>
+        <section id="jobs" class="job-grid" aria-live="polite"></section>
+    </main>
+    <script src="bulk-monitor.js"></script>
+</body>
+</html>

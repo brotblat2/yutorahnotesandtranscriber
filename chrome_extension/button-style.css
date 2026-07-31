@@ -72,3 +72,16 @@
 .yutorah-action-btn svg {
     flex-shrink: 0;
 }
+
+/* Hebrew Article (Maamar) button - soft light blue */
+#yutorah-maamar-btn {
+    background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%);
+    border-color: #81d4fa;
+}
+
+#yutorah-maamar-btn:hover {
+    background: linear-gradient(135deg, #81d4fa 0%, #4fc3f7 100%);
+    border-color: #4fc3f7;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(129, 212, 250, 0.4);
+}

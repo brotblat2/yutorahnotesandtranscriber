@@ -112,6 +112,9 @@ script.onload = function () {
             case 'REGENERATE_NOTE':
                 handleRegenerateNote(data);
                 break;
+            case 'PROCESS_TEXT':
+                handleProcessText(data);
+                break;
         }
     }
 
@@ -201,6 +204,10 @@ script.onload = function () {
                     cacheKey = `yutorah_${match[1]}_${data.type}`;
                 }
             }
+            
+            if (pageUrl.startsWith('upload://')) {
+                cacheKey = pageUrl.replace('upload://', '');
+            }
 
             if (!cacheKey) {
                 throw new Error('Invalid URL format');
@@ -233,6 +240,89 @@ script.onload = function () {
             console.error('Error regenerating note:', error);
             sendToSidebar('ERROR', {
                 message: 'Error regenerating note: ' + error.message
+            });
+        }
+    }
+    
+    // Handle text processing request from sidebar
+    async function handleProcessText(data) {
+        console.log('Handling process text:', data);
+        try {
+            const pageUrl = data.url || window.location.href;
+            const originalType = data.originalType;
+            
+            // Prefer the exact key supplied by the sidebar. This is required
+            // when enhancing an already-created copy rather than the original.
+            let originalKey = data.originalKey;
+            const sitePrefix = getSitePrefix(pageUrl);
+            
+            if (!originalKey && sitePrefix === 'yutorah') {
+                const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
+                if (match) originalKey = `${sitePrefix}_${match[1]}_${originalType}`;
+            } else if (!originalKey && sitePrefix === 'kolhalashon') {
+                const match = pageUrl.match(/\/playShiur\/(\d+)/);
+                if (match) originalKey = `${sitePrefix}_${match[1]}_${originalType}`;
+            }
+            // For uploads
+            if (!originalKey && pageUrl.startsWith('upload://')) {
+                originalKey = pageUrl.replace('upload://', '');
+            }
+
+            sendToSidebar('PROGRESS', {
+                message: data.type === 'enhance_transcript' ? 'Enhancing and organizing your transcript...' : 'Translating your note...',
+                progress: 30
+            });
+
+            const response = await new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage(
+                    {
+                        action: 'processTextShiur',
+                        text: data.text,
+                        type: data.type,
+                        originalKey: originalKey,
+                        overwrite: data.overwrite,
+                        metadata: { title: data.title }
+                    },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                        } else {
+                            resolve(response);
+                        }
+                    }
+                );
+            });
+
+            console.log('Process Text Response received:', response);
+
+            if (response && response.success) {
+                sendToSidebar('PROGRESS', {
+                    message: 'Complete!',
+                    progress: 100
+                });
+
+                setTimeout(() => {
+                    sendToSidebar('SUCCESS', {
+                        content: response.content,
+                        model: response.model,
+                        isFallback: response.isFallback,
+                        newKey: response.newKey,
+                        newType: response.newType,
+                        title: response.title,
+                        overwritten: response.overwritten
+                    });
+                }, 500);
+            } else {
+                const errorMsg = response?.error || 'Unknown error occurred';
+                console.error('Processing text error:', errorMsg);
+                sendToSidebar('ERROR', {
+                    message: errorMsg
+                });
+            }
+        } catch (error) {
+            console.error('Error processing text:', error);
+            sendToSidebar('ERROR', {
+                message: error.message || 'An error occurred while processing'
             });
         }
     }
@@ -532,7 +622,9 @@ script.onload = function () {
 
                 setTimeout(() => {
                     sendToSidebar('SUCCESS', {
-                        content: response.content
+                        content: response.content,
+                        model: response.model,
+                        isFallback: response.isFallback
                     });
                 }, 500);
             } else {

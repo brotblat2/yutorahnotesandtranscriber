@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YUTorah Notes Viewer</title>
+    <title>Shiur AI Assistant Viewer</title>
     <link rel="stylesheet" href="viewer.css">
 </head>
 
@@ -12,7 +12,7 @@
     <div class="container">
         <header>
             <div class="header-content">
-                <h1>📝 YUTorah Notes</h1>
+                <h1>📝 Shiur AI Assistant</h1>
                 <div class="header-actions">
                     <button id="uploadBtn" class="btn-secondary">📤 Upload File</button>
                     <button id="backBtn" class="btn-secondary">← Back</button>
@@ -41,12 +41,34 @@
                     </div>
                     <div class="note-actions">
                         <button id="copyBtn" class="btn-secondary">📋 Copy</button>
-                        <button id="downloadDocBtn" class="btn-primary">💾 Download</button>
+                        <button id="downloadDocxBtn" class="btn-primary">💾 Download DOCX</button>
+                        <button id="downloadPdfBtn" class="btn-secondary">📄 Save as PDF</button>
                         <button id="deleteBtn" class="btn-danger">🗑️ Delete</button>
                     </div>
                 </div>
 
+                <div class="ai-tools-bar" id="aiToolsBar">
+                    <div class="ai-tools-label">AI refinements</div>
+                    <button id="enhanceViewBtn" class="btn-secondary btn-small"
+                        title="Clean paragraph structure and remove filler words">Enhance</button>
+                    <select id="translateViewSelect" class="custom-select">
+                        <option value="">🌐 Translate...</option>
+                        <option value="translate_english_hebrew">🇺🇸 English</option>
+                        <option value="translate_beis_medrash">🇮🇱 Hebrew</option>
+                    </select>
+                    <label class="checkbox-label" title="Replace the current note instead of saving a separate copy">
+                        <input type="checkbox" id="overwriteViewCheck">
+                        <span>Replace this note instead</span>
+                    </label>
+                    <span class="ai-tools-hint">New copies are named automatically.</span>
+                </div>
 
+
+
+                <div class="warning-banner" id="viewModelWarningBanner"
+                    style="display: none; background-color: #E9D502; color: #202124; padding: 10px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; font-size: 0.9rem;">
+                    ⚠️ Non-ideal AI model was used due to rate limits. Re-processing later may yield better results.
+                </div>
 
                 <div id="noteContent" class="note-content"></div>
             </div>
@@ -86,15 +108,16 @@
                                 <input type="text" id="mergedFilename" placeholder="Enter filename (without extension)"
                                     style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
                                     value="yutorah-merged">
-                                <span style="color: #666;">.doc</span>
+                                <span style="color: #666;">.docx / .pdf</span>
                             </div>
                             <small style="color: #666; display: block; margin-top: 4px;">
-                                Leave blank for default: yutorah-merged-[timestamp].doc
+                                Leave blank for default: yutorah-merged-[timestamp]
                             </small>
                         </div>
 
                         <div class="modal-actions">
-                            <button id="exportMergedBtn" class="btn-primary">📄 Export to DOC</button>
+                            <button id="exportMergedDocxBtn" class="btn-primary">💾 Export DOCX</button>
+                            <button id="exportMergedPdfBtn" class="btn-secondary">📄 Save as PDF</button>
                             <button id="cancelMergeBtn" class="btn-secondary">Cancel</button>
                         </div>
                     </div>

@@ -55,7 +55,7 @@ If you cannot access the contents of the audio file or if it is silent/invalid, 
 
 אם אינך יכול לגשת לתוכן הקובץ, כתוב בדיוק: "sorry can't access the audio file".`,
 
-    ocr: `Extract and format ALL text from this PDF document. Follow these rules strictly:
+    ocr: `Extract and format ALL text from this document. Follow these rules strictly:
 
 LANGUAGE REQUIREMENT: Preserve the original language of the text. Hebrew text must remain in Hebrew script, English in English.
 
@@ -74,50 +74,26 @@ CONTENT REQUIREMENTS:
 - Do NOT add commentary or summaries.
 - Do NOT translate.
 
-If the PDF is unreadable, corrupted, or contains no extractable text, respond with exactly:
-"sorry can't extract text from this PDF"`,
+If the document is unreadable, corrupted, or contains no extractable text, respond with exactly:
+"sorry can't extract text from this document"`,
 
     kol_halashon_notes: `Follow these rules strictly:
-Take extensive notes of this audio file.
+Take clear notes of this audio file.
 
 LANGUAGE STYLE: Write in "Yeshivish" style - English sentences naturally integrating Hebrew/Aramaic terms.
 Example: "If a husband claims he paid the כתובה while the wife still holds the document, he is not believed due to the principle of שטרך בידי מאי בעי."
 
-FORMATTING:
-- Use ONLY markdown syntax.
-- **Bold** key concepts, halakhic categories, and names of Rishonim/Acharonim.
-- Use bullet points for arguments and steps.
-- ALL hebrew terms must be in hebrew script.
 
-CONTENT FOCUS:
-1. **The Flow (המהלך):** Clearly trace the logical progression of the shiur. How does one step lead to the next?
-2. **Chidushim (חידושים):** Explicitly highlight novel insights or creative interpretations. Use a section header or bold text to mark them.
-3. **Arguments & Proofs:** Detail the shakla v'tarya (give and take).
-
-Structure:
-- ## Topic / Sugya
-- ### Section Headers (use Hebrew or English)
-- **Chidush:** [The novel point]
-
-Do NOT add:
-- Introductions or summaries.
-- Timestamps.
-- English translation of Hebrew/Aramaic terms.
-
-If you cannot access the audio, respond: "sorry can't access the audio file"`,
-
-    notes: `Follow these rules strictly:
-Take extensive notes of this audio file.
-
-LANGUAGE REQUIREMENT: Write ALL explanatory content, descriptions, and notes in ENGLISH ONLY.
-HEBREW TERMS: Write Hebrew terms, phrases, and quotations in Hebrew script only (do NOT translate or transliterate them).
-Use ONLY markdown syntax (no HTML).
-
-Structure:
-- ## for major sections
-- ### for subtopics/analytical stages
-- Bullet points (-) for arguments, proofs, questions, nafka minot.
-- **Bold** for key concepts and halakhic categories.
+Required Output Format:
+- Use ## for major sections.
+- Use ### for subtopics/analytical stages.
+- Under every heading, write ONLY bullet points.
+- Every note/content line must start with "- " exactly.
+- Do NOT use numbered lists.
+- Do NOT write standalone paragraphs.
+- Keep bullets specific and complete; one idea, proof, question, answer, or nafka mina per bullet.
+- Use **bold** for key concepts and halakhic categories.
+- DO NOT MAKE ANY CHARTS!!!!
 
 Content Guidelines:
 - Preserve the full logical content.
@@ -126,20 +102,83 @@ Content Guidelines:
 - You MAY rephrase sentences for flow/clarity, but keep the ideas verbatim.
 - If it is a classic Talmudic shiur, explain how logical arguments fit back into the sources (Gemara/Rishonim).
 
-Do NOT add:
-- Introductions, conclusions, or meta-summaries.
-- Logistical/administrative details.
 
-CRITICAL: DO NOT HALLUCINATE. Ensure every point is derived directly from the audio.
 CRITICAL: Maintain consistent depth throughout (including the end of the shiur).
 
-If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly:
-"sorry can't access the audio file"`
+Do NOT add:
+- Introductions or summaries.
+- Timestamps.
+- English translation of Hebrew/Aramaic terms.
+
+If you cannot access the audio, respond: "sorry can't access the audio file"`,
+
+    notes: `
+Follow these rules strictly to create comprehensive, highly structured notes of this audio file:
+
+Language & Script Rules
+English Only: Write all explanatory content, descriptions, and analysis in English.
+
+Hebrew Script Only: Write Hebrew terms, phrases, and textual quotations in Hebrew script only (do not translate or transliterate them).
+
+Formatting Rules (Markdown Only)
+Use ## for major conceptual sections.
+
+Use ### for subtopics, analytical stages, or logical developments.
+
+Bullets Only: Under every heading, write only bullet points. Every single line must start with -  exactly.
+
+Do NOT use numbered lists, standalone paragraphs, introductions, or conclusions.
+
+Use bold for key concepts, legal categories, and core terms.
+
+Content & Logic Guidelines
+Synthesize and Link: Instead of listing isolated, verbatim sentences, synthesize the speaker's points into clear, progressive arguments. Connect the questions, proofs, and answers so the logical flow is easy to follow.
+
+Preserve the Full Argumentation: Do not omit steps, proofs, or objections. Ensure the reasoning behind every conclusion is fully explained.
+
+Source Integration: If this is a Talmudic shiur, explicitly detail how the logical arguments fit back into the text of the sources (Gemara, Rishonim, Acharonim).
+
+Zero Hallucination: Every point must be derived directly from the audio. Do not add outside knowledge or logistical/administrative details. Maintain this depth consistently from the beginning to the end of the file.
+
+If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly: "sorry can't access the audio file"
+`,
+
+enhance_transcript: `Please enhance this transcript.
+Rules:
+- Preserve the original language, meaning, and level of detail. Do not summarize, add, or omit substantive content.
+- Organize the text into readable paragraphs. Add Markdown headings only when a clear topic shift is already present in the transcript.
+- Remove obvious verbal filler (for example: um, uh, repeated false starts, and "you know") and only redundant repetition that does not carry meaning.
+- Keep quotations, source references, names, and the speaker's train of thought intact.
+- Render Hebrew words and sources in Hebrew characters whenever they appear in the transcript.
+- Return only the polished transcript; do not add an introduction or editorial notes.`,
+
+    translate_english_hebrew: `Translate the following text into English, but keep all Talmudic, Halakhic, and Hebrew terms in their original Hebrew phrasing (transliterated or in Hebrew script).
+Rules:
+- Maintain the structure and flow of the original text.
+- Provide a clear, accurate translation of the concepts.
+- IMPORTANT: Do not summarize; translate the entirety of the text.
+- Do NOT summarize or remove actual content. Ensure all points and details remain.
+- Clean up the paragraphs and structure, without shortening the shiur. Make sure to keep the exact formulations to the translated language and trains of thought
+
+`,
+
+    translate_beis_medrash: `Translate and rewrite the following text into Beis Medrash style Hebrew (Lashon Kodesh).
+Rules:
+- The text must be written in Torah/Yeshivish Hebrew.
+- Use traditional expressions (e.g., "והנה", "ולכאורה יש להקשות", "וביאור הדברים").
+- IMPORTANT: Do not summarize; translate the entirety of the text.
+- Do NOT summarize or remove actual content. Ensure all points and details remain.
+- Clean up the paragraphs and structure, without shortening the shiur. Make sure to keep the exact formulations to the translated language and trains of thought
+`
 };
 
 // Gemini API Client
 const GeminiAPI = {
     BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
+
+    safeUrl(url) {
+        return String(url || '').replace(/([?&]key=)[^&]+/i, '$1[redacted]');
+    },
 
     /**
      * Light cleanup for known Gemini LaTeX artifacts
@@ -158,7 +197,12 @@ const GeminiAPI = {
      */
     async uploadFile(apiKey, fileBlob, mimeType = 'audio/mpeg') {
         const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`;
-        console.log('Uploading file:', fileBlob.name || 'audio file');
+        console.info('[GeminiAPI] Starting resumable upload:', {
+            endpoint: this.safeUrl(uploadUrl),
+            name: fileBlob.name || 'audio file',
+            size: fileBlob.size,
+            mimeType
+        });
 
         const initiateResponse = await fetch(uploadUrl, {
             method: 'POST',
@@ -181,6 +225,7 @@ const GeminiAPI = {
 
         const resumableUrl = initiateResponse.headers.get('X-Goog-Upload-URL');
         if (!resumableUrl) throw new Error('Missing resumable upload URL');
+        console.info('[GeminiAPI] Upload session created; sending audio bytes.');
 
         const uploadResponse = await fetch(resumableUrl, {
             method: 'POST',
@@ -198,6 +243,7 @@ const GeminiAPI = {
         }
 
         const fileData = await uploadResponse.json();
+        console.info('[GeminiAPI] Audio upload complete:', fileData.file?.name || 'unknown file');
         await this.waitForFileProcessing(apiKey, fileData.file.name);
         return fileData.file;
     },
@@ -206,11 +252,15 @@ const GeminiAPI = {
      * Poll until Gemini finishes processing the file
      */
     async waitForFileProcessing(apiKey, fileName, maxAttempts = 30) {
+        console.info('[GeminiAPI] Waiting for uploaded file to become ACTIVE:', fileName);
         for (let i = 0; i < maxAttempts; i++) {
             const res = await fetch(`${this.BASE_URL}/${fileName}?key=${apiKey}`);
             const data = await res.json();
 
-            if (data.state === 'ACTIVE') return;
+            if (data.state === 'ACTIVE') {
+                console.info('[GeminiAPI] Uploaded file is ACTIVE:', fileName);
+                return;
+            }
             if (data.state === 'FAILED') throw new Error('Gemini file processing failed');
 
             await new Promise(r => setTimeout(r, 2000));
@@ -219,14 +269,12 @@ const GeminiAPI = {
     },
 
     /**
-     * Generate transcript or notes
+     * Generate content strictly from text input (no file upload)
      */
-    async generateContent(apiKey, fileUri, requestType = 'notes', customPrompts = null, mimeType = 'audio/mpeg') {
-        // Use different model order based on request type
-        // Maamar mode uses gemini-2.5-flash by default for better Hebrew output
-        const models = requestType === 'maamar'
-            ? ['gemini-3-flash-preview', 'gemini-3-pro-preview', 'gemini-2.5-flash']
-            : ['gemini-3-flash-preview', 'gemini-3-pro-preview', 'gemini-2.5-flash'];
+    async generateContentFromText(apiKey, textInput, requestType = 'enhance_transcript', customPrompts = null, options = {}) {
+        // Use flash model for text tasks for speed
+        const availableModels = ["gemini-3.6-flash", "gemini-3-flash-preview", "gemini-2.5-flash"];
+        const models = options.allowFallbackModels === false ? [availableModels[0]] : availableModels;
         let lastError = null;
 
         for (let i = 0; i < models.length; i++) {
@@ -234,7 +282,122 @@ const GeminiAPI = {
             const url = `${this.BASE_URL}/models/${model}:generateContent?key=${apiKey}`;
 
             try {
-                console.log(`Attempting generation with model: ${model}`);
+                await options.beforeModelAttempt?.({ model, attempt: i + 1 });
+                console.info('[GeminiAPI] Attempting text generation:', { model, endpoint: this.safeUrl(url), attempt: i + 1 });
+
+                let prompt;
+
+                // 1. Check for Custom Prompts
+                if (customPrompts) {
+                    if (requestType === 'enhance_transcript' && customPrompts.enhancePrompt) {
+                        prompt = customPrompts.enhancePrompt;
+                    } else if (requestType === 'translate_english_hebrew' && customPrompts.translateEnglishPrompt) {
+                        prompt = customPrompts.translateEnglishPrompt;
+                    } else if (requestType === 'translate_beis_medrash' && customPrompts.translateBeisMedrashPrompt) {
+                        prompt = customPrompts.translateBeisMedrashPrompt;
+                    }
+                }
+
+                // 2. Fall back to Default Prompts
+                if (!prompt) {
+                    if (requestType === 'enhance_transcript') {
+                        prompt = DEFAULT_PROMPTS.enhance_transcript;
+                    } else if (requestType === 'translate_english_hebrew') {
+                        prompt = DEFAULT_PROMPTS.translate_english_hebrew;
+                    } else if (requestType === 'translate_beis_medrash') {
+                        prompt = DEFAULT_PROMPTS.translate_beis_medrash;
+                    } else {
+                        throw new Error(`Unknown text request type: \${requestType}`);
+                    }
+                }
+
+                console.log(`Sending text request with type: \${requestType}`);
+
+                const body = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { text: "\\n\\nText to process:\\n" + textInput }
+                        ]
+                    }],
+                    generationConfig: {
+                        temperature: 0.2, // Keep it relatively deterministic
+                        topP: 0.9,
+                        maxOutputTokens: 65000,
+                    },
+                    safetySettings: [
+                        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+                        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' }
+                    ]
+                };
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                console.info('[GeminiAPI] Text generation response received:', { model, status: response.status });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
+
+                const data = await response.json();
+                const parts = data?.candidates?.[0]?.content?.parts;
+
+                if (!Array.isArray(parts)) {
+                    throw new Error('No content generated by Gemini');
+                }
+
+                const text = parts
+                    .filter(p => typeof p.text === 'string')
+                    .map(p => p.text)
+                    .join('\n');
+
+                console.log(`Successfully generated text content with model: ${model}`);
+                return { text: this.cleanFormatting(text), model: model, isFallback: i > 0 };
+
+            } catch (error) {
+                console.error(`Error with model ${model}:`, error.message);
+                lastError = error;
+
+                if (error?.code === 'BULK_STOPPED') throw error;
+                const errorMessage = String(error?.message || error).toLowerCase();
+                if (/429|resource_exhausted|rate.?limit|quota|failed to fetch|network|401|403|permission_denied|unauthenticated/.test(errorMessage)) {
+                    throw error;
+                }
+
+                // If this is not the last model, continue to next
+                if (i < models.length - 1) {
+                    console.log(`Falling back to next model...`);
+                    continue;
+                }
+            }
+        }
+
+        throw lastError || new Error('Failed to generate content with all available models');
+    },
+
+    /**
+     * Generate transcript or notes
+     */
+    async generateContent(apiKey, fileUri, requestType = 'notes', customPrompts = null, mimeType = 'audio/mpeg', options = {}) {
+        // Use different model order based on request type
+        const availableModels = ["gemini-3.6-flash", "gemini-3-flash-preview", "gemini-2.5-flash"];
+        const models = options.allowFallbackModels === false ? [availableModels[0]] : availableModels;
+        let lastError = null;
+
+        for (let i = 0; i < models.length; i++) {
+            const model = models[i];
+            const url = `${this.BASE_URL}/models/${model}:generateContent?key=${apiKey}`;
+
+            try {
+                await options.beforeModelAttempt?.({ model, attempt: i + 1 });
+                console.info('[GeminiAPI] Attempting audio generation:', { model, endpoint: this.safeUrl(url), attempt: i + 1, requestType });
 
                 let prompt;
 
@@ -293,6 +456,8 @@ const GeminiAPI = {
                     body: JSON.stringify(body)
                 });
 
+                console.info('[GeminiAPI] Audio generation response received:', { model, status: response.status, requestType });
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(errorText);
@@ -311,11 +476,17 @@ const GeminiAPI = {
                     .join('\n');
 
                 console.log(`Successfully generated content with model: ${model}`);
-                return this.cleanFormatting(text);
+                return { text: this.cleanFormatting(text), model: model, isFallback: i > 0 };
 
             } catch (error) {
-                console.error(`Error with model ${model}:`, error.message);
+                console.error(`Error with model ${model}:`, error.message || error);
                 lastError = error;
+
+                if (error?.code === 'BULK_STOPPED') throw error;
+                const errorMessage = String(error?.message || error).toLowerCase();
+                if (/429|resource_exhausted|rate.?limit|quota|failed to fetch|network|401|403|permission_denied|unauthenticated/.test(errorMessage)) {
+                    throw error;
+                }
 
                 // If this is not the last model, continue to next
                 if (i < models.length - 1) {
@@ -341,23 +512,57 @@ const GeminiAPI = {
      * Scrape YUTorah page for MP3 URL
      */
     async getMP3Url(pageUrl) {
-        const res = await fetch(pageUrl);
-        const html = await res.text();
-        const doc = new DOMParser().parseFromString(html, 'text/html');
+        let html = '';
+        let pageStatus = null;
+        try {
+            const res = await fetch(pageUrl);
+            pageStatus = res.status;
+            if (res.ok) html = await res.text();
+            else console.warn(`[GeminiAPI] YUTorah page returned ${res.status}; trying LectureData fallback.`);
+        } catch (error) {
+            console.warn('[GeminiAPI] Could not fetch YUTorah page; trying LectureData fallback:', error.message);
+        }
 
-        for (const a of doc.querySelectorAll('a[href]')) {
-            const href = a.getAttribute('href');
-            if (href?.toLowerCase().endsWith('.mp3')) {
-                return new URL(href, pageUrl).href;
+        if (html && typeof DOMParser !== 'undefined') {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            for (const a of doc.querySelectorAll('a[href]')) {
+                const href = a.getAttribute('href');
+                if (href?.toLowerCase().endsWith('.mp3')) {
+                    return new URL(href, pageUrl).href;
+                }
+            }
+
+            const audioSrc = doc.querySelector('audio')?.getAttribute('src') ||
+                doc.querySelector('audio source')?.getAttribute('src');
+            if (audioSrc) return new URL(audioSrc, pageUrl).href;
+        }
+
+        // Extension service workers do not expose DOMParser. Search the page
+        // source directly as a safe fallback.
+        const normalizedHtml = html.replace(/\\\//g, '/');
+        const encodedMatch = normalizedHtml.match(/https?:\/\/[^"'<>\s]+\.mp3(?:\?[^"'<>\s]*)?/i);
+        const relativeMatch = normalizedHtml.match(/(?:href|src)=["']([^"']+\.mp3(?:\?[^"']*)?)["']/i);
+        const rawUrl = encodedMatch?.[0] || relativeMatch?.[1];
+        if (rawUrl) return new URL(rawUrl, pageUrl).href;
+
+        const shiurId = pageUrl.match(/[?&]shiurid=(\d+)/i)?.[1] ||
+            pageUrl.match(/\/(?:lectures|lecture\.cfm)\/(\d+)/i)?.[1];
+        if (shiurId && !pageUrl.toLowerCase().includes('/sidebar/lecturedata')) {
+            const dataUrl = `https://www.yutorah.org/sidebar/LectureData?shiurID=${shiurId}`;
+            const dataResponse = await fetch(dataUrl);
+            if (dataResponse.ok) {
+                const dataHtml = (await dataResponse.text()).replace(/\\\//g, '/');
+                const dataMatch = dataHtml.match(/https?:\/\/[^"'<>\s]+\.mp3(?:\?[^"'<>\s]*)?/i) ||
+                    dataHtml.match(/(?:href|src)=["']([^"']+\.mp3(?:\?[^"']*)?)["']/i);
+                const dataMp3 = dataMatch?.[1] || dataMatch?.[0];
+                if (dataMp3) {
+                    console.info('[GeminiAPI] Found MP3 through LectureData fallback:', dataUrl);
+                    return new URL(dataMp3, dataUrl).href;
+                }
             }
         }
 
-        const audioSrc = doc.querySelector('audio')?.getAttribute('src') ||
-            doc.querySelector('audio source')?.getAttribute('src');
-
-        if (audioSrc) return new URL(audioSrc, pageUrl).href;
-
-        throw new Error('No MP3 found on YUTorah page');
+        throw new Error(pageStatus ? `Could not load shiur page (${pageStatus}) and no LectureData MP3 was found` : 'No MP3 found on YUTorah page');
     },
 
     /**
@@ -409,7 +614,7 @@ const GeminiAPI = {
 
             console.log(`Transcribing chunk ${i + 1}/${uploadedChunks.length}`);
 
-            const transcript = await this.generateContent(
+            const result = await this.generateContent(
                 apiKey,
                 chunk.fileUri,
                 'transcript',
@@ -419,7 +624,7 @@ const GeminiAPI = {
 
             transcriptChunks.push({
                 index: i,
-                transcript: transcript,
+                transcript: result.text,
                 startByte: chunk.startByte,
                 endByte: chunk.endByte
             });
@@ -489,20 +694,31 @@ const GeminiAPI = {
     /**
      * Main pipeline
      */
-    async processShiur(apiKey, pageUrl, requestType = 'notes', progress = null) {
-        progress?.('Finding MP3...');
+    async processShiur(apiKey, pageUrl, requestType = 'notes', progress = null, options = {}) {
+        console.info('[GeminiAPI] Starting shiur pipeline:', { pageUrl, requestType });
+        await progress?.('Finding MP3...');
         const mp3Url = await this.getMP3Url(pageUrl);
+        console.info('[GeminiAPI] MP3 source found:', mp3Url);
 
-        progress?.('Downloading audio...');
+        await progress?.('Downloading audio...');
         const blob = await this.downloadMP3(mp3Url);
+        console.info('[GeminiAPI] Audio downloaded:', { bytes: blob.size });
 
-        progress?.('Uploading to Gemini...');
+        await progress?.('Uploading to Gemini...');
         const file = await this.uploadFile(apiKey, blob);
 
-        progress?.('Generating output...');
-        const result = await this.generateContent(apiKey, file.uri, requestType);
+        await progress?.('Generating output...');
+        let customPrompts = null;
+        if (typeof Storage !== 'undefined' && Storage.getCustomPrompts) {
+            try {
+                customPrompts = await Storage.getCustomPrompts();
+            } catch (error) {
+                console.log('Could not load custom prompts, using defaults:', error);
+            }
+        }
+        const result = await this.generateContent(apiKey, file.uri, requestType, customPrompts, 'audio/mpeg', options);
 
-        progress?.('Done');
+        await progress?.('Done');
         return result;
     },
 
@@ -514,7 +730,7 @@ const GeminiAPI = {
      * @param {function} progressCallback - Optional callback for progress updates
      * @returns {string} Generated content
      */
-    async processShiurFromUrl(apiKey, mp3Url, requestType = 'notes', progressCallback = null) {
+    async processShiurFromUrl(apiKey, mp3Url, requestType = 'notes', progressCallback = null, options = {}) {
         console.log('Processing shiur from URL:', mp3Url);
 
         // Determine prompt type
@@ -530,13 +746,14 @@ const GeminiAPI = {
         const fileSizeMB = blob.size / 1024 / 1024;
         console.log(`Downloaded ${fileSizeMB.toFixed(2)}MB audio file`);
 
-        // Use chunked transcription for transcript mode on files > 5MB
-        if (requestType === 'transcript' && fileSizeMB > 5) {
-            console.log('Using chunked transcription for large file');
-            return await this.processTranscriptChunked(apiKey, blob, progressCallback);
-        }
+        // Chunked transcription is disabled - AudioChunker utility not implemented
+        // Use standard processing for all files regardless of size
+        // if (requestType === 'transcript' && fileSizeMB > 5) {
+        //     console.log('Using chunked transcription for large file');
+        //     return await this.processTranscriptChunked(apiKey, blob, progressCallback);
+        // }
 
-        // Standard processing for all other modes and small files
+        // Standard processing for all modes and files
         console.log('Uploading to Gemini...');
         const file = await this.uploadFile(apiKey, blob);
 
@@ -551,7 +768,7 @@ const GeminiAPI = {
             }
         }
 
-        const result = await this.generateContent(apiKey, file.uri, effectiveRequestType, customPrompts);
+        const result = await this.generateContent(apiKey, file.uri, effectiveRequestType, customPrompts, 'audio/mpeg', options);
         console.log('Processing complete');
         return result;
     }

@@ -78,6 +78,32 @@ main {
     padding-bottom: 8px;
 }
 
+.api-key-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 2px solid var(--primary-color);
+    margin-bottom: 16px;
+}
+
+.api-key-heading h2 {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.api-key-heading a {
+    white-space: nowrap;
+    color: var(--primary-color);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.api-key-heading a:hover {
+    text-decoration: underline;
+}
+
 .info-box {
     background: var(--bg-light);
     border-left: 4px solid var(--primary-color);
@@ -423,5 +449,11 @@ button:disabled {
 
     .usage-stats {
         margin-left: 0;
+    }
+
+    .api-key-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
     }
 }

@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('upload.html') });
     });
 
+    document.getElementById('bulkProcesses').addEventListener('click', () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('bulk-monitor.html') });
+    });
+
     document.getElementById('openHelp').addEventListener('click', () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('SETUP.md') }); // Or link to online docs
     });

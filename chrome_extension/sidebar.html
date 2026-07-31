@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YUTorah Notes</title>
+    <title>Shiur AI Assistant</title>
     <style>
         * {
             margin: 0;
@@ -249,6 +249,85 @@
         .close-btn:hover {
             background: rgba(0, 0, 0, 0.3);
         }
+
+        /* AI Tools Panel */
+        .ai-tools-panel {
+            background: rgba(66, 133, 244, 0.05);
+            border: 1px solid rgba(66, 133, 244, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .ai-tools-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #4285f4;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ai-tools-description {
+            margin: -4px 0 12px;
+            color: #5f6368;
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .ai-tools-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .custom-select {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            background-color: white;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #202124;
+            cursor: pointer;
+        }
+
+        .custom-select:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #5f6368;
+            cursor: pointer;
+        }
+
+        .ai-tools-status {
+            margin-top: 10px;
+            color: #3367d6;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .processing-outcome {
+            margin: -8px 0 14px;
+            color: #137333;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .ai-tools-panel button:disabled,
+        .ai-tools-panel select:disabled,
+        .ai-tools-panel input:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
     </style>
 </head>
 
@@ -279,12 +358,39 @@
         </div>
 
         <div class="results-section" id="resultsSection">
+            <div class="warning-banner" id="modelWarningBanner"
+                style="display: none; background-color: #E9D502; color: #202124; padding: 10px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; font-size: 0.9rem;">
+                ⚠️ Non-ideal AI model was used due to rate limits. Re-processing later may yield better results.
+            </div>
             <h2>Results</h2>
+            <p class="processing-outcome" id="processingOutcome" hidden></p>
             <div class="results-content" id="resultsContent"></div>
             <div class="actions" id="actions">
-                <button class="btn btn-primary" id="downloadDocxBtn">💾 Download</button>
-                <button class="btn btn-secondary" id="redoBtn">🔄 Redo</button>
-                <button class="btn btn-danger" id="deleteBtn">🗑️ Delete</button>
+                <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 16px;">
+                    <button class="btn btn-primary" id="downloadDocxBtn" style="flex: 1;">💾 DOCX</button>
+                    <button class="btn btn-secondary" id="downloadPdfBtn" style="flex: 1;">📄 PDF</button>
+                    <button class="btn btn-secondary" id="redoBtn" style="flex: 1;">🔄 Redo</button>
+                    <button class="btn btn-danger" id="deleteBtn" style="flex: 1;">🗑️ Delete</button>
+                </div>
+
+                <div class="ai-tools-panel" id="aiToolsPanel">
+                    <div class="ai-tools-header">AI refinements</div>
+                    <p class="ai-tools-description">Enhance creates a polished copy by default, so your transcript stays safe.</p>
+                    <div class="ai-tools-row">
+                        <button class="btn btn-secondary" id="enhanceBtn"
+                            title="Clean paragraph structure and remove filler words" style="flex: 1;">Enhance</button>
+                        <select id="translateSelect" class="custom-select">
+                            <option value="">🌐 Translate...</option>
+                            <option value="translate_english_hebrew">🇺🇸 English</option>
+                            <option value="translate_beis_medrash">🇮🇱 Hebrew</option>
+                        </select>
+                    </div>
+                    <label class="checkbox-label" title="Replace the current note instead of saving a separate copy">
+                        <input type="checkbox" id="overwriteSidebarCheck">
+                        <span>Replace this note instead</span>
+                    </label>
+                    <p class="ai-tools-status" id="aiToolsStatus" hidden aria-live="polite"></p>
+                </div>
             </div>
         </div>
     </div>

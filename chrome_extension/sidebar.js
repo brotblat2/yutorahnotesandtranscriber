@@ -7,6 +7,8 @@ let currentContent = '';
 let currentType = '';
 let currentUrl = '';
 let currentTitle = '';
+let currentCacheKey = '';
+let isTextProcessing = false;
 
 // Listen for messages from content script
 window.addEventListener('message', (event) => {
@@ -78,6 +80,24 @@ function updateProgress(data) {
 function showResults(data) {
     console.log('Showing results');
     currentContent = data.content;
+    if (data.newKey) currentCacheKey = data.newKey;
+    if (data.newType) currentType = data.newType;
+    if (data.title) currentTitle = data.title;
+    setTextProcessingState(false);
+
+    const badge = document.getElementById('typeBadge');
+    if (badge && data.newType) {
+        badge.textContent = data.newType === 'enhanced' ? 'Enhanced transcript' : 'Translation';
+    }
+    const processingOutcome = document.getElementById('processingOutcome');
+    if (processingOutcome) {
+        processingOutcome.hidden = !data.newKey;
+        if (data.newKey) {
+            processingOutcome.textContent = data.overwritten
+                ? `Updated: ${data.title || 'this note'}`
+                : `Saved as: ${data.title || 'a new note'}`;
+        }
+    }
 
     // Hide progress section
     const progressSection = document.getElementById('progressSection');
@@ -92,6 +112,7 @@ function showResults(data) {
 
     if (resultsContent) {
         resultsContent.innerHTML = renderMarkdown(data.content);
+        applyDirectionToElement(resultsContent, data.content);
     }
     if (resultsSection) {
         resultsSection.classList.add('visible');
@@ -99,11 +120,34 @@ function showResults(data) {
     if (actions) {
         actions.classList.add('visible');
     }
+    
+    // Only show AI tools for transcripts
+    const aiToolsPanel = document.getElementById('aiToolsPanel');
+    if (aiToolsPanel) {
+        if (currentType === 'transcript' || currentType === 'enhanced') {
+            aiToolsPanel.style.display = 'block';
+        } else {
+            aiToolsPanel.style.display = 'none';
+        }
+    }
+
+    // Show warning if non-ideal model was used
+    const modelWarningBanner = document.getElementById('modelWarningBanner');
+    const modelUsedName = document.getElementById('modelUsedName');
+    if (modelWarningBanner && modelUsedName) {
+        if (data.isFallback || (data.model && data.model.includes('2.5'))) {
+            modelUsedName.textContent = data.model || 'Unknown';
+            modelWarningBanner.style.display = 'block';
+        } else {
+            modelWarningBanner.style.display = 'none';
+        }
+    }
 }
 
 function showError(data) {
     console.log('Showing error:', data);
     const { message, isRetryable } = data;
+    setTextProcessingState(false);
 
     // Hide progress section
     const progressSection = document.getElementById('progressSection');
@@ -136,40 +180,7 @@ function showError(data) {
 
 // Simple markdown renderer
 function renderMarkdown(markdown) {
-    let html = markdown;
-
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-    // Blockquotes
-    html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-
-    // Lists
-    html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-
-    // Line breaks
-    html = html.replace(/\n\n/g, '</p><p>');
-    html = html.replace(/\n/g, '<br>');
-
-    // Wrap in paragraphs
-    html = '<p>' + html + '</p>';
-
-    // Clean up
-    html = html.replace(/<p><\/p>/g, '');
-    html = html.replace(/<p>(<h[1-3]>)/g, '$1');
-    html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<ul>)/g, '$1');
-    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<blockquote>)/g, '$1');
-    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-
-    return html;
+    return renderMarkdownToHtml(markdown);
 }
 
 // Close sidebar
@@ -300,10 +311,11 @@ if (downloadDocxBtn) {
         html = html.replace(/(<\/ul>)<\/p>/g, '$1');
         html = html.replace(/<p>(<blockquote>)/g, '$1');
         html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
+        html = applyDirectionalFormattingToHtml(html, currentContent);
 
         // Create complete HTML document with UTF-8 encoding for Hebrew
         // Detect if majority is Hebrew for proper text direction
-        const docDirection = isMajorityHebrew(html) ? 'rtl' : 'ltr';
+        const docDirection = isMajorityHebrew(currentContent) ? 'rtl' : 'ltr';
         const htmlDoc = `<!DOCTYPE html>
 <html dir="${docDirection}">
 <head>
@@ -319,7 +331,8 @@ if (downloadDocxBtn) {
             line-height: 1.6;
             margin: 0;
             padding: 0;
-            direction: ltr;
+            direction: ${docDirection};
+            text-align: ${docDirection === 'rtl' ? 'right' : 'left'};
         }
         h1 {
             font-size: 20pt;
@@ -374,6 +387,17 @@ if (downloadDocxBtn) {
             direction: rtl;
             text-align: right;
         }
+        ul[dir="rtl"] {
+            padding-left: 0;
+            padding-right: 24pt;
+        }
+        blockquote[dir="rtl"] {
+            margin: 12pt 24pt 12pt 0;
+            padding-left: 0;
+            padding-right: 12pt;
+            border-left: none;
+            border-right: 4pt solid #cccccc;
+        }
     </style>
 </head>
 <body>
@@ -381,23 +405,88 @@ ${html}
 </body>
 </html>`;
 
-        // Create blob with UTF-8 BOM for proper encoding
-        const blob = new Blob(['\ufeff', htmlDoc], {
-            type: 'application/msword;charset=utf-8'
-        });
-        const url = URL.createObjectURL(blob);
+        // Use the shared renderer so DOCX and PDF handle nested bullets alike.
+        html = renderMarkdownToHtml(currentContent);
 
         // Create filename from title or fallback to timestamp
         let filename = currentTitle || `yutorah-${currentType}`.trim();
         // Sanitize filename - remove invalid characters
         filename = filename.replace(/[<>:"/\\|?*]/g, '-').replace(/\s+/g, '_').substring(0, 100);
+        exportAsDocx(html, currentTitle, filename, currentContent);
+    });
+}
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.doc`;
-        a.click();
+const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener('click', () => {
+        exportAsPdf(renderMarkdown(currentContent), currentContent, currentTitle || `yutorah-${currentType}`);
+    });
+}
 
-        URL.revokeObjectURL(url);
+function setTextProcessingState(isProcessing, type = '') {
+    isTextProcessing = isProcessing;
+    const enhanceBtn = document.getElementById('enhanceBtn');
+    const translateSelect = document.getElementById('translateSelect');
+    const overwriteCheck = document.getElementById('overwriteSidebarCheck');
+    const status = document.getElementById('aiToolsStatus');
+
+    if (enhanceBtn) {
+        enhanceBtn.disabled = isProcessing;
+        enhanceBtn.textContent = isProcessing && type === 'enhance_transcript' ? 'Enhancing…' : '🪄 Enhance';
+    }
+    if (translateSelect) translateSelect.disabled = isProcessing;
+    if (overwriteCheck) overwriteCheck.disabled = isProcessing;
+    if (status) {
+        status.hidden = !isProcessing;
+        status.textContent = type === 'enhance_transcript'
+            ? 'Creating a polished version of this transcript…'
+            : 'Creating your translated copy…';
+    }
+}
+
+function startTextProcessing(type) {
+    if (!currentContent || isTextProcessing) return;
+
+    const progressSection = document.getElementById('progressSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const actions = document.getElementById('actions');
+    const overwrite = document.getElementById('overwriteSidebarCheck')?.checked || false;
+
+    if (progressSection) progressSection.style.display = 'block';
+    if (resultsSection) resultsSection.classList.remove('visible');
+    if (actions) actions.classList.remove('visible');
+
+    setTextProcessingState(true, type);
+    updateProgress({
+        message: type === 'enhance_transcript' ? 'Preparing your enhancement…' : 'Preparing your translation…',
+        progress: 10
+    });
+
+    window.parent.postMessage({
+        action: 'PROCESS_TEXT',
+        data: {
+            text: currentContent,
+            type,
+            url: currentUrl,
+            title: currentTitle,
+            originalType: currentType,
+            originalKey: currentCacheKey,
+            overwrite
+        }
+    }, '*');
+}
+
+const enhanceBtn = document.getElementById('enhanceBtn');
+if (enhanceBtn) {
+    enhanceBtn.addEventListener('click', () => startTextProcessing('enhance_transcript'));
+}
+
+const translateSelect = document.getElementById('translateSelect');
+if (translateSelect) {
+    translateSelect.addEventListener('change', event => {
+        const processType = event.target.value;
+        event.target.value = '';
+        if (processType) startTextProcessing(processType);
     });
 }
 

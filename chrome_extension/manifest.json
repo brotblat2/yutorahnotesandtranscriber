@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "YUTorah Notes",
+  "name": "Shiur AI Assistant",
   "description": "Generate AI-powered notes and transcripts from YUTorah shiurim with one click - completely private and local",
-  "version": "2.1.4",
+  "version": "4.0.0",
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": [
     "*://*.yutorah.org/*",
@@ -21,17 +22,21 @@
         "*://*.kolhalashon.com/*"
       ],
       "js": [
-        "content.js"
+        "storage.js",
+        "utils.js",
+        "content.js",
+        "bulk-search.js"
       ],
       "css": [
-        "button-style.css"
+        "button-style.css",
+        "bulk-search.css"
       ],
       "run_at": "document_end"
     }
   ],
   "options_page": "options.html",
   "action": {
-    "default_title": "YUTorah Notes",
+    "default_title": "Shiur AI Assistant",
     "default_popup": "popup.html"
   },
   "web_accessible_resources": [

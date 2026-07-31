@@ -142,6 +142,69 @@ main {
     gap: 8px;
 }
 
+/* AI Tools Bar */
+.ai-tools-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(66, 133, 244, 0.05);
+    border: 1px solid rgba(66, 133, 244, 0.2);
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.ai-tools-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+}
+
+.ai-tools-hint {
+    flex-basis: 100%;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin-top: -4px;
+}
+
+.custom-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: white;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    min-width: 140px;
+}
+
+.custom-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.ai-tools-bar button:disabled,
+.ai-tools-bar select:disabled,
+.ai-tools-bar input:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
 .note-content {
     background: white;
     padding: 30px;
@@ -744,6 +807,16 @@ button:active {
 
     .note-actions button {
         flex: 1;
+    }
+    
+    .ai-tools-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .checkbox-label {
+        margin-left: 0;
     }
 
     .view-header {

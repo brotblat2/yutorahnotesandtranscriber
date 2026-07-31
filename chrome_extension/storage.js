@@ -1,7 +1,20 @@
 // Storage abstraction layer for YUTorah Notes Extension
 // Handles all chrome.storage operations and cache management
 
+const DEFAULT_DAILY_REQUEST_LIMIT = 3;
+
+function getLocalDateStamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 const Storage = {
+    // Serializes quota claims made by this extension context. The background
+    // service worker is the single authority for default-key quota claims.
+    _dailyUsageQueue: Promise.resolve(),
     /**
      * Generates a cache key from the URL and request type
      * Format: yutorah_{id}_{type} or upload_{filename}_{type}
@@ -23,7 +36,8 @@ const Storage = {
         }
 
         // YUTorah file - extract lecture ID
-        const match = url.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
+        const match = url.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/) ||
+            url.match(/[?&]shiurid=(\d+)/i);
         if (match) {
             return `yutorah_${match[1]}_${requestType}`;
         }
@@ -44,7 +58,8 @@ const Storage = {
         }
 
         // YUTorah
-        const match = url.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
+        const match = url.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/) ||
+            url.match(/[?&]shiurid=(\d+)/i);
         if (match) {
             return `https://www.yutorah.org/lectures/${match[1]}`;
         }
@@ -96,6 +111,12 @@ const Storage = {
             }
             if (metadata.seriesInfo) {
                 data[`${cacheKey}_series`] = metadata.seriesInfo;
+            }
+            if (metadata.modelUsed) {
+                data[`${cacheKey}_modelUsed`] = metadata.modelUsed;
+            }
+            if (metadata.isFallback !== undefined) {
+                data[`${cacheKey}_isFallback`] = metadata.isFallback;
             }
 
             // Auto-generate tags from metadata
@@ -175,7 +196,9 @@ const Storage = {
                             !key.endsWith('_references') &&
                             !key.endsWith('_venue') &&
                             !key.endsWith('_speaker') &&
-                            !key.endsWith('_series')) {
+                            !key.endsWith('_series') &&
+                            !key.endsWith('_modelUsed') &&
+                            !key.endsWith('_isFallback')) {
                             notes[key] = {
                                 content: value,
                                 timestamp: items[`${key}_timestamp`] || null,
@@ -185,7 +208,9 @@ const Storage = {
                                 references: items[`${key}_references`] || [],
                                 venue: items[`${key}_venue`] || null,
                                 speaker: items[`${key}_speaker`] || null,
-                                series: items[`${key}_series`] || null
+                                series: items[`${key}_series`] || null,
+                                modelUsed: items[`${key}_modelUsed`] || null,
+                                isFallback: items[`${key}_isFallback`] || false
                             };
                         }
                     }
@@ -209,7 +234,9 @@ const Storage = {
                 `${cacheKey}_references`,
                 `${cacheKey}_venue`,
                 `${cacheKey}_speaker`,
-                `${cacheKey}_series`
+                `${cacheKey}_series`,
+                `${cacheKey}_modelUsed`,
+                `${cacheKey}_isFallback`
             ], () => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
@@ -434,7 +461,7 @@ const Storage = {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = getLocalDateStamp();
                     const resetDate = result.daily_usage_reset_date || today;
 
                     // Reset count if it's a new day
@@ -456,7 +483,7 @@ const Storage = {
      */
     async incrementDailyUsage() {
         const usage = await this.getDailyUsage();
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateStamp();
 
         return new Promise((resolve, reject) => {
             chrome.storage.local.set({
@@ -476,7 +503,7 @@ const Storage = {
      * Reset daily usage count (called when new day detected)
      */
     async resetDailyUsage() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateStamp();
 
         return new Promise((resolve, reject) => {
             chrome.storage.local.set({
@@ -506,14 +533,12 @@ const Storage = {
 
         // Default mode has 3 requests per day limit
         const usage = await this.getDailyUsage();
-        const DAILY_LIMIT = 3;
-
-        if (usage.count >= DAILY_LIMIT) {
+        if (usage.count >= DEFAULT_DAILY_REQUEST_LIMIT) {
             return {
                 allowed: false,
                 reason: 'rate_limit_exceeded',
                 usage: usage,
-                limit: DAILY_LIMIT
+                limit: DEFAULT_DAILY_REQUEST_LIMIT
             };
         }
 
@@ -521,8 +546,59 @@ const Storage = {
             allowed: true,
             reason: 'default_key',
             usage: usage,
-            limit: DAILY_LIMIT
+            limit: DEFAULT_DAILY_REQUEST_LIMIT
         };
+    },
+
+    /**
+     * Atomically claim one default-key request slot. This must be called only
+     * by the background service worker so simultaneous requests cannot exceed
+     * the daily limit.
+     */
+    async claimDailyRequest() {
+        let releaseQueue;
+        const previousClaim = this._dailyUsageQueue;
+        this._dailyUsageQueue = new Promise(resolve => {
+            releaseQueue = resolve;
+        });
+
+        await previousClaim;
+
+        try {
+            const usage = await this.getDailyUsage();
+            if (usage.count >= DEFAULT_DAILY_REQUEST_LIMIT) {
+                return {
+                    allowed: false,
+                    reason: 'rate_limit_exceeded',
+                    usage,
+                    limit: DEFAULT_DAILY_REQUEST_LIMIT
+                };
+            }
+
+            const count = usage.count + 1;
+            const resetDate = getLocalDateStamp();
+            await new Promise((resolve, reject) => {
+                chrome.storage.local.set({
+                    daily_usage_count: count,
+                    daily_usage_reset_date: resetDate
+                }, () => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+
+            return {
+                allowed: true,
+                reason: 'default_key',
+                usage: { count, resetDate },
+                limit: DEFAULT_DAILY_REQUEST_LIMIT
+            };
+        } finally {
+            releaseQueue();
+        }
     },
 
     /**

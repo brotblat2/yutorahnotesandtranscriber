@@ -5,13 +5,14 @@ let currentCacheKey = null;
 document.addEventListener('DOMContentLoaded', async () => {
     // Parse URL parameters
     const params = new URLSearchParams(window.location.search);
+    const key = params.get('key');
     const url = params.get('url');
     const type = params.get('type');
 
     // Event listeners
     document.getElementById('backBtn').addEventListener('click', () => {
         // If viewing a single note, go back to all notes view
-        if (url && type) {
+        if (key || (url && type)) {
             window.location.href = 'viewer.html';
         } else {
             // If on all notes view, close the window
@@ -27,14 +28,162 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'upload.html';
     });
 
-    if (url && type) {
-        // Single note view
+    if (key) {
+        // Single note view via exact cache key
+        await loadSingleNoteByKey(key);
+    } else if (url && type) {
+        // Fallback for older links
         await loadSingleNote(url, type);
     } else {
         // All notes view
         await loadAllNotes();
     }
 });
+
+/**
+ * Helper to parse cache keys robustly
+ */
+function parseCacheKey(cacheKey) {
+    const parts = cacheKey.split('_');
+    const isUpload = cacheKey.startsWith('upload_');
+    const isKolHalashon = cacheKey.startsWith('kolhalashon_');
+    const isYuTorah = cacheKey.startsWith('yutorah_');
+
+    let url, type, lectureId;
+
+    const knownTypes = ['notes', 'transcript', 'maamar', 'enhanced', 'translated_eng', 'translated_heb'];
+    const processedType = cacheKey.match(/__(enhanced|translated_eng|translated_heb)__[^_]+$/);
+    type = processedType?.[1] || parts.find(p => knownTypes.includes(p)) || parts[2] || 'notes';
+
+    if (isUpload) {
+        url = `upload://${cacheKey}`;
+    } else if (isKolHalashon) {
+        lectureId = parts[1];
+        url = `https://www.kolhalashon.com/he/regularSite/playShiur/${lectureId}/-1/0/false`;
+    } else if (isYuTorah) {
+        lectureId = parts[1];
+        url = `https://www.yutorah.org/lectures/${lectureId}`;
+    } else {
+        url = '';
+    }
+
+    return { url, type, isUpload, lectureId };
+}
+
+/**
+ * Load a single note by explicit cache key
+ */
+async function loadSingleNoteByKey(cacheKey) {
+    const loadingState = document.getElementById('loadingState');
+    const singleNoteView = document.getElementById('singleNoteView');
+
+    loadingState.style.display = 'flex';
+    currentCacheKey = cacheKey;
+
+    try {
+        const { url, type } = parseCacheKey(cacheKey);
+
+        // Get cached note and full metadata
+        const content = await Storage.getCachedNotes(cacheKey);
+        if (!content) {
+            throw new Error('Note not found in cache');
+        }
+        
+        const allNotes = await Storage.getAllNotes();
+        const noteData = allNotes[cacheKey] || {};
+        const modelUsed = noteData.modelUsed;
+
+        // Display the note
+        const title = await getTitle(cacheKey);
+        const noteTitleElement = document.getElementById('noteTitle');
+        noteTitleElement.textContent = title || extractTitleFromUrl(url);
+        applyDirectionToElement(noteTitleElement, content);
+        
+        let typeDisplay = 'Notes';
+        if (type === 'transcript') typeDisplay = 'Transcript';
+        else if (type === 'maamar') typeDisplay = 'מאמר';
+        else if (type === 'enhanced') typeDisplay = 'Enhanced';
+        else if (type === 'translated_eng') typeDisplay = 'English';
+        else if (type === 'translated_heb') typeDisplay = 'Lashon Kodesh';
+
+        document.getElementById('noteType').textContent = typeDisplay;
+        document.getElementById('noteType').className = `badge ${type}`;
+
+        // Get timestamp
+        const timestamp = await getTimestamp(cacheKey);
+        if (timestamp) {
+            document.getElementById('noteDate').textContent = formatDate(timestamp);
+        }
+
+        // Render markdown content
+        const noteContentElement = document.getElementById('noteContent');
+        noteContentElement.innerHTML = renderMarkdown(content);
+        applyDirectionToElement(noteContentElement, content);
+
+        // Setup action buttons
+        document.getElementById('copyBtn').addEventListener('click', () => copyToClipboard(content));
+        document.getElementById('downloadDocxBtn').addEventListener('click', () => downloadNoteAsDocx(content, url, type));
+        document.getElementById('downloadPdfBtn').addEventListener('click', () => downloadNoteAsPdf(content, url, type));
+        document.getElementById('deleteBtn').addEventListener('click', () => deleteNote(currentCacheKey));
+
+        // Add enhance and translate listeners
+        const enhanceBtn = document.getElementById('enhanceViewBtn');
+        const translateSelect = document.getElementById('translateViewSelect');
+
+        // Prevent multiple bindings by replacing elements
+        const newEnhanceBtn = enhanceBtn.cloneNode(true);
+        enhanceBtn.parentNode.replaceChild(newEnhanceBtn, enhanceBtn);
+        
+        const newTranslateSelect = translateSelect.cloneNode(true);
+        translateSelect.parentNode.replaceChild(newTranslateSelect, translateSelect);
+
+        newEnhanceBtn.addEventListener('click', () => {
+            const overwrite = document.getElementById('overwriteViewCheck')?.checked || false;
+            handleTextProcessing(content, 'enhance_transcript', title, currentCacheKey, overwrite);
+        });
+        newTranslateSelect.addEventListener('change', (e) => {
+            const processType = e.target.value;
+            const overwrite = document.getElementById('overwriteViewCheck')?.checked || false;
+            if (processType) {
+                handleTextProcessing(content, processType, title, currentCacheKey, overwrite);
+                newTranslateSelect.value = '';
+            }
+        });
+
+        // Only show AI tools for transcripts
+        const aiToolsBar = document.getElementById('aiToolsBar');
+        if (aiToolsBar) {
+            if (type === 'transcript' || type === 'enhanced') {
+                aiToolsBar.style.display = 'flex';
+            } else {
+                aiToolsBar.style.display = 'none';
+            }
+        }
+
+        // Show warning if non-ideal model was used
+        const modelWarningBanner = document.getElementById('viewModelWarningBanner');
+        const modelUsedName = document.getElementById('viewModelUsedName');
+        if (modelWarningBanner && modelUsedName) {
+            if (noteData.isFallback || (modelUsed && modelUsed.includes('2.5'))) {
+                modelUsedName.textContent = modelUsed || 'Unknown';
+                modelWarningBanner.style.display = 'block';
+            } else {
+                modelWarningBanner.style.display = 'none';
+            }
+        }
+
+        loadingState.style.display = 'none';
+        singleNoteView.style.display = 'block';
+    } catch (error) {
+        console.error('Error loading note:', error);
+        loadingState.innerHTML = `
+            <div class="error-state">
+                <p>❌ Error loading note</p>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+}
 
 /**
  * Load a single note
@@ -52,15 +201,21 @@ async function loadSingleNote(url, type) {
             throw new Error('Invalid URL format');
         }
 
-        // Get cached note
+        // Get cached note and metadata
         const content = await Storage.getCachedNotes(currentCacheKey);
         if (!content) {
             throw new Error('Note not found in cache');
         }
+        
+        const allNotes = await Storage.getAllNotes();
+        const noteData = allNotes[currentCacheKey] || {};
+        const modelUsed = noteData.modelUsed;
 
         // Display the note
         const title = await getTitle(currentCacheKey);
-        document.getElementById('noteTitle').textContent = title || extractTitleFromUrl(url);
+        const noteTitleElement = document.getElementById('noteTitle');
+        noteTitleElement.textContent = title || extractTitleFromUrl(url);
+        applyDirectionToElement(noteTitleElement, content);
         document.getElementById('noteType').textContent = type === 'transcript' ? 'Transcript' : 'Notes';
         document.getElementById('noteType').className = `badge ${type}`;
 
@@ -79,20 +234,60 @@ async function loadSingleNote(url, type) {
         // Render markdown content
         const noteContentElement = document.getElementById('noteContent');
         noteContentElement.innerHTML = renderMarkdown(content);
-
-        // Apply RTL direction if content is majority Hebrew
-        if (isMajorityHebrew(content)) {
-            noteContentElement.style.direction = 'rtl';
-            noteContentElement.style.textAlign = 'right';
-        } else {
-            noteContentElement.style.direction = 'ltr';
-            noteContentElement.style.textAlign = 'left';
-        }
+        applyDirectionToElement(noteContentElement, content);
 
         // Setup action buttons
         document.getElementById('copyBtn').addEventListener('click', () => copyToClipboard(content));
-        document.getElementById('downloadDocBtn').addEventListener('click', () => downloadNoteAsDoc(content, url, type));
+        document.getElementById('downloadDocxBtn').addEventListener('click', () => downloadNoteAsDocx(content, url, type));
+        document.getElementById('downloadPdfBtn').addEventListener('click', () => downloadNoteAsPdf(content, url, type));
         document.getElementById('deleteBtn').addEventListener('click', () => deleteNote(currentCacheKey));
+
+        // Add enhance and translate listeners
+        const enhanceBtn = document.getElementById('enhanceViewBtn');
+        const translateSelect = document.getElementById('translateViewSelect');
+
+        // Prevent multiple bindings by replacing elements
+        const newEnhanceBtn = enhanceBtn.cloneNode(true);
+        enhanceBtn.parentNode.replaceChild(newEnhanceBtn, enhanceBtn);
+        
+        const newTranslateSelect = translateSelect.cloneNode(true);
+        translateSelect.parentNode.replaceChild(newTranslateSelect, translateSelect);
+
+        newEnhanceBtn.addEventListener('click', () => {
+            const overwrite = document.getElementById('overwriteViewCheck')?.checked || false;
+            handleTextProcessing(content, 'enhance_transcript', title, currentCacheKey, overwrite);
+        });
+        
+        newTranslateSelect.addEventListener('change', (e) => {
+            const processType = e.target.value;
+            const overwrite = document.getElementById('overwriteViewCheck')?.checked || false;
+            if (processType) {
+                handleTextProcessing(content, processType, title, currentCacheKey, overwrite);
+                newTranslateSelect.value = '';
+            }
+        });
+
+        // Only show AI tools for transcripts
+        const aiToolsBar = document.getElementById('aiToolsBar');
+        if (aiToolsBar) {
+            if (type === 'transcript' || type === 'enhanced') {
+                aiToolsBar.style.display = 'flex';
+            } else {
+                aiToolsBar.style.display = 'none';
+            }
+        }
+
+        // Show warning if non-ideal model was used
+        const modelWarningBanner = document.getElementById('viewModelWarningBanner');
+        const modelUsedName = document.getElementById('viewModelUsedName');
+        if (modelWarningBanner && modelUsedName) {
+            if (noteData.isFallback || (modelUsed && modelUsed.includes('2.5'))) {
+                modelUsedName.textContent = modelUsed || 'Unknown';
+                modelWarningBanner.style.display = 'block';
+            } else {
+                modelWarningBanner.style.display = 'none';
+            }
+        }
 
         loadingState.style.display = 'none';
         singleNoteView.style.display = 'block';
@@ -104,6 +299,60 @@ async function loadSingleNote(url, type) {
                 <p>${error.message}</p>
             </div>
         `;
+    }
+}
+
+/**
+ * Handle Enhance and Translate in Viewer
+ */
+async function handleTextProcessing(text, type, title, originalKey, overwrite = false) {
+    const loadingState = document.getElementById('loadingState');
+    const singleNoteView = document.getElementById('singleNoteView');
+    
+    // Show loading text
+    const loadingText = loadingState.querySelector('p');
+    const originalLoadingText = loadingText.textContent;
+    loadingText.textContent = type === 'enhance_transcript' ? 'Enhancing text...' : 'Translating text...';
+    
+    singleNoteView.style.display = 'none';
+    loadingState.style.display = 'flex';
+
+    try {
+        const response = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage(
+                {
+                    action: 'processTextShiur',
+                    text: text,
+                    type: type,
+                    originalKey: originalKey,
+                    overwrite: overwrite,
+                    metadata: { title: title }
+                },
+                (response) => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                    } else {
+                        resolve(response);
+                    }
+                }
+            );
+        });
+
+        if (response && response.success && response.newKey) {
+            // Show the exact saved result, whether it replaced the current
+            // note or was saved as a clearly named copy.
+            window.location.href = `viewer.html?key=${encodeURIComponent(response.newKey)}`;
+        } else {
+            throw new Error(response?.error || 'Unknown error occurred');
+        }
+    } catch (error) {
+        console.error('Error processing text:', error);
+        alert('Error processing text: ' + error.message);
+        // Restore view
+        loadingState.style.display = 'none';
+        singleNoteView.style.display = 'block';
+    } finally {
+        loadingText.textContent = originalLoadingText;
     }
 }
 
@@ -134,9 +383,8 @@ async function loadAllNotes() {
             // Setup event delegation for view and delete buttons
             notesList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('btn-view')) {
-                    const url = e.target.dataset.url;
-                    const type = e.target.dataset.type;
-                    window.location.href = `viewer.html?url=${encodeURIComponent(url)}&type=${type}`;
+                    const cacheKey = e.target.dataset.key;
+                    window.location.href = `viewer.html?key=${encodeURIComponent(cacheKey)}`;
                 } else if (e.target.classList.contains('btn-delete-card')) {
                     const cacheKey = e.target.dataset.key;
                     deleteNoteCard(cacheKey);
@@ -172,32 +420,22 @@ async function loadAllNotes() {
  * Create a note card HTML
  */
 function createNoteCard(cacheKey, data) {
+    const parsed = parseCacheKey(cacheKey);
+    const url = parsed.url;
+    const type = parsed.type;
     const parts = cacheKey.split('_');
-    const isUpload = cacheKey.startsWith('upload_');
-    const isKolHalashon = cacheKey.startsWith('kolhalashon_');
-    const isYuTorah = cacheKey.startsWith('yutorah_');
-
-    let url, title, lectureId, type;
-
+    const isUpload = parsed.isUpload;
+    
+    let title;
     if (isUpload) {
-        // Uploaded file: upload_[filename]_[type]
-        type = parts[parts.length - 1];
         const filename = parts.slice(1, -1).join('_');
-        url = `upload://${cacheKey}`;
         title = data.title || filename;
-    } else if (isKolHalashon) {
-        // Kol Halashon: kolhalashon_[id]_[type]
-        lectureId = parts[1];
-        type = parts[2];
-        // Construct Kol Halashon URL
-        url = `https://www.kolhalashon.com/he/regularSite/playShiur/${lectureId}/-1/0/false`;
-        title = data.title || `קול הלשון ${lectureId}`;
+    } else if (parsed.lectureId && cacheKey.startsWith('kolhalashon_')) {
+        title = data.title || `קול הלשון ${parsed.lectureId}`;
+    } else if (parsed.lectureId) {
+        title = data.title || `Lecture ${parsed.lectureId}`;
     } else {
-        // YUTorah file: yutorah_[id]_[type]
-        lectureId = parts[1];
-        type = parts[2];
-        url = `https://www.yutorah.org/lectures/${lectureId}`;
-        title = data.title || `Lecture ${lectureId}`;
+        title = data.title || cacheKey;
     }
 
     const preview = data.content.substring(0, 200).replace(/[#*>\\-]/g, '').trim();
@@ -208,6 +446,13 @@ function createNoteCard(cacheKey, data) {
 
     // Add source badge for uploaded files
     const sourceBadge = isUpload ? '<span class="badge upload">📤 Uploaded</span>' : '';
+    
+    let typeDisplay = 'Notes';
+    if (type === 'transcript') typeDisplay = 'Transcript';
+    else if (type === 'maamar') typeDisplay = 'מאמר';
+    else if (type === 'enhanced') typeDisplay = 'Enhanced';
+    else if (type === 'translated_eng') typeDisplay = 'English trans.';
+    else if (type === 'translated_heb') typeDisplay = 'Lashon Kodesh';
 
     return `
         <div class="note-card" data-key="${cacheKey}" data-title="${title}" data-type="${type}">
@@ -216,15 +461,15 @@ function createNoteCard(cacheKey, data) {
             </div>
             <div class="note-card-content">
                 <div class="note-card-header">
-                    <h3>${displayTitle}</h3>
+                    <h3 ${getTextDirectionAttrs(displayTitle, data.content)}>${displayTitle}</h3>
                     ${sourceBadge}
-                    <span class="badge ${type}">${type === 'transcript' ? 'Transcript' : type === 'maamar' ? 'מאמר' : 'Notes'}</span>
+                    <span class="badge ${type}">${typeDisplay}</span>
                 </div>
-                <p class="note-preview">${preview}...</p>
+                <p class="note-preview" ${getTextDirectionAttrs(preview, data.content)}>${preview}...</p>
                 <div class="note-card-footer">
                     <span class="date">${date}</span>
                     <div class="note-card-actions">
-                        <button class="btn-small btn-view" data-url="${url}" data-type="${type}">View</button>
+                        <button class="btn-small btn-view" data-key="${cacheKey}">View</button>
                         <button class="btn-small btn-danger btn-delete-card" data-key="${cacheKey}">Delete</button>
                     </div>
                 </div>
@@ -236,8 +481,8 @@ function createNoteCard(cacheKey, data) {
 /**
  * View a note (global function for onclick handlers)
  */
-window.viewNote = function (url, type) {
-    window.location.href = `viewer.html?url=${encodeURIComponent(url)}&type=${type}`;
+window.viewNoteByKey = function (cacheKey) {
+    window.location.href = `viewer.html?key=${encodeURIComponent(cacheKey)}`;
 }
 
 /**
@@ -299,9 +544,16 @@ async function downloadNote(content, url, type) {
 }
 
 /**
- * Download note as DOC file with improved formatting
+ * Helper to generate styled HTML for export
  */
-async function downloadNoteAsDoc(content, url, type) {
+function generateStyledHtml(content, title, type) {
+    return renderMarkdownToHtml(content);
+}
+
+/**
+ * Download note as a real DOCX file.
+ */
+async function downloadNoteAsDocx(content, url, type) {
     // Get title from storage if available
     const cacheKey = currentCacheKey;
     let title;
@@ -315,174 +567,16 @@ async function downloadNoteAsDoc(content, url, type) {
     }
 
     const filename = sanitizeFilename(`${title}-${type}`);
+    const htmlContent = generateStyledHtml(content, title, type);
 
-    // Convert markdown to HTML with proper formatting
-    let html = content;
-
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-    // Italic
-    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-    // Blockquotes
-    html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-
-    // Lists - properly handle bullet points
-    const lines = html.split('\n');
-    let inList = false;
-    let processedLines = [];
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmedLine = line.trim();
-
-        if (trimmedLine.match(/^- /)) {
-            if (!inList) {
-                processedLines.push('<ul>');
-                inList = true;
-            }
-            processedLines.push('<li>' + trimmedLine.substring(2) + '</li>');
-        } else if (trimmedLine === '') {
-            // Empty line - close list if open, otherwise add paragraph break
-            if (inList) {
-                processedLines.push('</ul>');
-                inList = false;
-            }
-            processedLines.push('');
-        } else {
-            if (inList) {
-                processedLines.push('</ul>');
-                inList = false;
-            }
-            processedLines.push(line);
-        }
-    }
-    if (inList) {
-        processedLines.push('</ul>');
-    }
-
-    html = processedLines.join('\n');
-
-    // Convert double line breaks to paragraph breaks
-    html = html.split('\n\n').map(para => {
-        const trimmed = para.trim();
-        // Don't wrap headers, lists, or blockquotes in paragraphs
-        if (trimmed.startsWith('<h') || trimmed.startsWith('<ul>') ||
-            trimmed.startsWith('<blockquote>') || trimmed === '') {
-            return trimmed;
-        }
-        return '<p>' + trimmed.replace(/\n/g, ' ') + '</p>';
-    }).join('\n');
-
-    // Clean up empty paragraphs and extra whitespace
-    html = html.replace(/<p>\s*<\/p>/g, '');
-    html = html.replace(/<p>(<h[1-3]>)/g, '$1');
-    html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<ul>)/g, '$1');
-    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<blockquote>)/g, '$1');
-    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-
-    // Create complete HTML document with UTF-8 encoding for Hebrew
-    // Detect if majority is Hebrew for proper text direction
-    const docDirection = isMajorityHebrew(html) ? 'rtl' : 'ltr';
-    const htmlDoc = `<!DOCTYPE html>
-<html dir="${docDirection}">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <style>
-        @page {
-            margin: 1in;
-        }
-        body {
-            font-family: 'Calibri', 'Arial', 'David', sans-serif;
-            font-size: 12pt;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            direction: ltr;
-        }
-        h1 {
-            font-size: 20pt;
-            font-weight: bold;
-            margin-top: 24pt;
-            margin-bottom: 12pt;
-            page-break-after: avoid;
-        }
-        h2 {
-            font-size: 16pt;
-            font-weight: bold;
-            margin-top: 18pt;
-            margin-bottom: 10pt;
-            page-break-after: avoid;
-        }
-        h3 {
-            font-size: 14pt;
-            font-weight: bold;
-            margin-top: 14pt;
-            margin-bottom: 8pt;
-            page-break-after: avoid;
-        }
-        p {
-            margin-top: 0;
-            margin-bottom: 12pt;
-            text-align: justify;
-        }
-        ul {
-            margin-top: 6pt;
-            margin-bottom: 12pt;
-            padding-left: 24pt;
-        }
-        li {
-            margin-bottom: 6pt;
-            line-height: 1.5;
-        }
-        strong {
-            font-weight: bold;
-        }
-        em {
-            font-style: italic;
-        }
-        blockquote {
-            margin: 12pt 0 12pt 24pt;
-            padding-left: 12pt;
-            border-left: 4pt solid #cccccc;
-            font-style: italic;
-            color: #333333;
-        }
-        /* Hebrew text support */
-        [dir="rtl"] {
-            direction: rtl;
-            text-align: right;
-        }
-    </style>
-</head>
-<body>
-${html}
-</body>
-</html>`;
-
-    // Create blob with UTF-8 BOM for proper encoding
-    const blob = new Blob(['\ufeff', htmlDoc], {
-        type: 'application/msword;charset=utf-8'
-    });
-    const downloadUrl = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = `${filename}.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
+    exportAsDocx(htmlContent, title, filename, content);
 }
+
+function downloadNoteAsPdf(content, url, type) {
+    const title = document.getElementById('noteTitle').textContent || extractTitleFromUrl(url);
+    exportAsPdf(generateStyledHtml(content, title, type), content, title);
+}
+
 
 /**
  * Sanitize filename by removing invalid characters
@@ -561,40 +655,7 @@ function formatDate(timestamp) {
  * Simple markdown renderer
  */
 function renderMarkdown(markdown) {
-    let html = markdown;
-
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-    // Blockquotes
-    html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-
-    // Lists
-    html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-
-    // Line breaks
-    html = html.replace(/\n\n/g, '</p><p>');
-    html = html.replace(/\n/g, '<br>');
-
-    // Wrap in paragraphs
-    html = '<p>' + html + '</p>';
-
-    // Clean up
-    html = html.replace(/<p><\/p>/g, '');
-    html = html.replace(/<p>(<h[1-3]>)/g, '$1');
-    html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<ul>)/g, '$1');
-    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<blockquote>)/g, '$1');
-    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-
-    return html;
+    return renderMarkdownToHtml(markdown);
 }
 
 /**
@@ -813,7 +874,8 @@ function setupMergeExport() {
     const selectedCountSpan = document.getElementById('selectedCount');
     const mergePanelModal = document.getElementById('mergePanelModal');
     const selectedShiurimList = document.getElementById('selectedShiurimList');
-    const exportMergedBtn = document.getElementById('exportMergedBtn');
+    const exportMergedDocxBtn = document.getElementById('exportMergedDocxBtn');
+    const exportMergedPdfBtn = document.getElementById('exportMergedPdfBtn');
     const cancelMergeBtn = document.getElementById('cancelMergeBtn');
     const selectAllBtn = document.getElementById('selectAllBtn');
     const deselectAllBtn = document.getElementById('deselectAllBtn');
@@ -835,10 +897,6 @@ function setupMergeExport() {
                 card: checkbox.closest('.note-card')
             }))
             .filter(({ card }) => card && card.style.display !== 'none' && !card.querySelector('.note-select-checkbox').checked);
-
-        // Sort by timestamp (oldest first)
-        // Note cards are sorted newest first in the display, so we reverse that
-        visibleCheckboxes.reverse();
 
         // Select them in order (oldest to newest)
         visibleCheckboxes.forEach(({ checkbox }) => {
@@ -956,16 +1014,19 @@ function setupMergeExport() {
     }
 
     // Export merged document
-    exportMergedBtn.addEventListener('click', async () => {
+    const handleMergedExport = async (format) => {
+        const pdfWindow = format === 'pdf' ? window.open('', '_blank') : null;
         const orderedItems = [...selectedShiurimList.querySelectorAll('.merge-item')];
         const orderedKeys = orderedItems.map(item => item.dataset.key);
 
-        await exportMergedDocument(orderedKeys);
+        await exportMergedDocument(orderedKeys, format, pdfWindow);
 
         // Close modal and clear selection
         mergePanelModal.style.display = 'none';
         clearSelection();
-    });
+    };
+    exportMergedDocxBtn.addEventListener('click', () => handleMergedExport('docx'));
+    exportMergedPdfBtn.addEventListener('click', () => handleMergedExport('pdf'));
 
     function clearSelection() {
         selectedNotes.clear();
@@ -978,7 +1039,7 @@ function setupMergeExport() {
 /**
  * Export merged document
  */
-async function exportMergedDocument(orderedKeys) {
+async function exportMergedDocument(orderedKeys, format = 'docx', pdfWindow = null) {
     try {
         // Fetch all note data
         const notesData = [];
@@ -1001,9 +1062,11 @@ async function exportMergedDocument(orderedKeys) {
 
         // Table of Contents
         mergedHtml += '<h1>Table of Contents</h1>\n';
-        mergedHtml += '<ul>\n';
+        const mergedText = notesData.map(note => note.content || '').join('\n\n');
+        mergedHtml += `<ul ${getTextDirectionAttrs(notesData.map(note => note.title || '').join(' '), mergedText)}>\n`;
         notesData.forEach((note, index) => {
-            mergedHtml += `<li>${index + 1}. ${note.title} (${note.type === 'transcript' ? 'Transcript' : 'Notes'})</li>\n`;
+            const tocText = `${index + 1}. ${note.title} (${note.type === 'transcript' ? 'Transcript' : 'Notes'})`;
+            mergedHtml += `<li ${getTextDirectionAttrs(tocText, mergedText)}>${tocText}</li>\n`;
         });
         mergedHtml += '</ul>\n';
         mergedHtml += '<hr style="page-break-after: always; border: none; margin: 24pt 0;">\n\n';
@@ -1011,79 +1074,12 @@ async function exportMergedDocument(orderedKeys) {
         // Add each shiur
         notesData.forEach((note, index) => {
             // Shiur header
-            mergedHtml += `<h1>${index + 1}. ${note.title}</h1>\n`;
+            const noteTitle = `${index + 1}. ${note.title}`;
+            mergedHtml += `<h1 ${getTextDirectionAttrs(noteTitle, mergedText)}>${noteTitle}</h1>\n`;
             mergedHtml += `<p style="color: #666; font-style: italic;">${note.type === 'transcript' ? 'Transcript' : 'Notes'}</p>\n\n`;
 
-            // Convert markdown to HTML
-            let html = note.content;
-
-            // Headers (use h2, h3, h4 since h1 is used for shiur title)
-            html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>');
-            html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
-            html = html.replace(/^# (.*$)/gim, '<h2>$1</h2>');
-
-            // Bold and italic
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-            // Blockquotes
-            html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-
-            // Lists
-            const lines = html.split('\n');
-            let inList = false;
-            let processedLines = [];
-
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const trimmedLine = line.trim();
-
-                if (trimmedLine.match(/^- /)) {
-                    if (!inList) {
-                        processedLines.push('<ul>');
-                        inList = true;
-                    }
-                    processedLines.push('<li>' + trimmedLine.substring(2) + '</li>');
-                } else if (trimmedLine === '') {
-                    if (inList) {
-                        processedLines.push('</ul>');
-                        inList = false;
-                    }
-                    processedLines.push('');
-                } else {
-                    if (inList) {
-                        processedLines.push('</ul>');
-                        inList = false;
-                    }
-                    processedLines.push(line);
-                }
-            }
-            if (inList) {
-                processedLines.push('</ul>');
-            }
-
-            html = processedLines.join('\n');
-
-            // Paragraphs
-            html = html.split('\n\n').map(para => {
-                const trimmed = para.trim();
-                if (trimmed.startsWith('<h') || trimmed.startsWith('<ul>') ||
-                    trimmed.startsWith('<blockquote>') || trimmed === '') {
-                    return trimmed;
-                }
-                return '<p>' + trimmed.replace(/\n/g, ' ') + '</p>';
-            }).join('\n\n');
-
-            // Clean up
-            html = html.replace(/<p>\s*<\/p>/g, '');
-            html = html.replace(/<p>(<h[1-4]>)/g, '$1');
-            html = html.replace(/(<\/h[1-4]>)<\/p>/g, '$1');
-            html = html.replace(/<p>(<ul>)/g, '$1');
-            html = html.replace(/(<\/ul>)<\/p>/g, '$1');
-            html = html.replace(/<p>(<blockquote>)/g, '$1');
-            html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-
-            mergedHtml += html;
+            // Reserve h1 for the merged-document's shiur title.
+            mergedHtml += renderMarkdownToHtml(note.content, 1);
 
             // Page break between shiurim (except last one)
             if (index < notesData.length - 1) {
@@ -1093,7 +1089,7 @@ async function exportMergedDocument(orderedKeys) {
 
         // Create complete HTML document
         // Detect if merged content is majority Hebrew for proper text direction
-        const docDirection = isMajorityHebrew(mergedHtml) ? 'rtl' : 'ltr';
+        const docDirection = isMajorityHebrew(mergedText) ? 'rtl' : 'ltr';
         const htmlDoc = `<!DOCTYPE html>
 <html dir="${docDirection}">
 <head>
@@ -1109,7 +1105,8 @@ async function exportMergedDocument(orderedKeys) {
             line-height: 1.6;
             margin: 0;
             padding: 0;
-            direction: ltr;
+            direction: ${docDirection};
+            text-align: ${docDirection === 'rtl' ? 'right' : 'left'};
         }
         h1 {
             font-size: 20pt;
@@ -1177,18 +1174,23 @@ async function exportMergedDocument(orderedKeys) {
             direction: rtl;
             text-align: right;
         }
+        ul[dir="rtl"] {
+            padding-left: 0;
+            padding-right: 24pt;
+        }
+        blockquote[dir="rtl"] {
+            margin: 12pt 24pt 12pt 0;
+            padding-left: 0;
+            padding-right: 12pt;
+            border-left: none;
+            border-right: 4pt solid #cccccc;
+        }
     </style>
 </head>
 <body>
 ${mergedHtml}
 </body>
 </html>`;
-
-        // Create and download
-        const blob = new Blob(['\ufeff', htmlDoc], {
-            type: 'application/msword;charset=utf-8'
-        });
-        const url = URL.createObjectURL(blob);
 
         // Get custom filename from input or use default
         const filenameInput = document.getElementById('mergedFilename');
@@ -1201,15 +1203,13 @@ ${mergedHtml}
         // Sanitize filename
         filename = sanitizeFilename(filename);
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.doc`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        if (format === 'pdf') {
+            exportAsPdf(mergedHtml, mergedText, filename, pdfWindow);
+        } else {
+            exportAsDocx(mergedHtml, filename, filename, mergedText);
+        }
 
-        alert(`Successfully exported ${notesData.length} shiurim!`);
+        alert(`Successfully prepared ${notesData.length} shiurim for ${format === 'pdf' ? 'PDF' : 'DOCX'} export!`);
     } catch (error) {
         console.error('Error exporting merged document:', error);
         alert('Error exporting merged document: ' + error.message);
