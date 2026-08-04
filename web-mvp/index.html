@@ -3,74 +3,63 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#15233f">
+  <meta name="theme-color" content="#f6f4ef">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Shiur Notes">
-  <meta name="description" content="A tappable mobile prototype for turning shiurim into organized notes and transcripts.">
-  <title>Shiur Notes MVP</title>
+  <meta name="description" content="Turn Torah audio into structured notes and transcripts.">
+  <title>Shiur Notes</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar" id="topbar">
-      <button class="icon-button hidden" id="backButton" aria-label="Go back">
-        <span aria-hidden="true">‹</span>
-      </button>
-      <div>
-        <p class="eyebrow" id="screenEyebrow">SHIUR NOTES</p>
-        <h1 id="screenTitle">Home</h1>
+    <header class="topbar">
+      <button class="nav-button hidden" id="backButton" aria-label="Go back">Back</button>
+      <div class="brand-lockup">
+        <span class="brand-mark">ש</span>
+        <div><p>SHIUR NOTES</p><h1 id="screenTitle">Home</h1></div>
       </div>
-      <button class="icon-button" id="topAction" aria-label="Add a shiur">
-        <span aria-hidden="true">＋</span>
-      </button>
+      <button class="nav-button" id="topAction">Add</button>
     </header>
-
     <main id="app" aria-live="polite"></main>
-
     <nav class="tabbar" id="tabbar" aria-label="Primary navigation">
-      <button class="tab active" data-tab="home">
-        <span class="tab-icon" aria-hidden="true">⌂</span>
-        <span>Home</span>
-      </button>
-      <button class="tab" data-tab="library">
-        <span class="tab-icon" aria-hidden="true">▤</span>
-        <span>Library</span>
-      </button>
-      <button class="tab" data-tab="settings">
-        <span class="tab-icon" aria-hidden="true">⚙︎</span>
-        <span>Settings</span>
-      </button>
+      <button class="tab active" data-tab="home"><span>Home</span></button>
+      <button class="tab" data-tab="library"><span>Library</span></button>
+      <button class="tab" data-tab="settings"><span>Settings</span></button>
     </nav>
   </div>
 
   <dialog id="addDialog" class="sheet">
     <form method="dialog" class="sheet-card" id="addForm">
-      <div class="sheet-handle" aria-hidden="true"></div>
-      <div class="sheet-heading">
-        <div>
-          <p class="eyebrow">NEW SHIUR</p>
-          <h2>Add a Shiur</h2>
-        </div>
-        <button class="close-button" value="cancel" aria-label="Close">×</button>
+      <div class="sheet-head">
+        <div><p class="kicker">NEW SHIUR</p><h2>Choose a source</h2></div>
+        <button class="close-button" value="cancel" aria-label="Close">Close</button>
       </div>
-
-      <label class="field-label" for="shiurUrl">Paste a YUTorah or Kol Halashon link</label>
-      <input id="shiurUrl" class="text-input" type="url" inputmode="url" autocomplete="url" placeholder="https://www.yutorah.org/lectures/...">
-      <p class="field-hint" id="urlHint">For the prototype, any link will open the confirmation flow.</p>
-
-      <button type="button" class="primary-button" id="continueLink">Continue with Link</button>
+      <label class="field-label" for="shiurUrl">YUTorah, Kol Halashon, or direct audio URL</label>
+      <input id="shiurUrl" class="text-input" type="url" inputmode="url" autocomplete="url" placeholder="Paste a link">
+      <button type="button" class="primary-button" id="continueLink">Continue with link</button>
       <div class="divider"><span>or</span></div>
       <button type="button" class="choice-button" id="importAudio">
-        <span class="choice-symbol" aria-hidden="true">↑</span>
-        <span><strong>Import Audio</strong><small>Choose an MP3, M4A, or audio file</small></span>
+        <span><strong>Import an audio file</strong><small>MP3, M4A, WAV, or another supported format</small></span>
       </button>
       <input id="audioFile" type="file" accept="audio/*" hidden>
       <button type="button" class="choice-button" id="pasteClipboard">
-        <span class="choice-symbol" aria-hidden="true">▣</span>
-        <span><strong>Paste from Clipboard</strong><small>Use a copied shiur link</small></span>
+        <span><strong>Paste from clipboard</strong><small>Use the link currently copied on your phone</small></span>
       </button>
+    </form>
+  </dialog>
+
+  <dialog id="keyDialog" class="sheet">
+    <form method="dialog" class="sheet-card" id="keyForm">
+      <div class="sheet-head">
+        <div><p class="kicker">GEMINI</p><h2>Personal API key</h2></div>
+        <button class="close-button" value="cancel">Close</button>
+      </div>
+      <p class="notice">This web preview stores the key in this browser’s local storage. Use a restricted key and remove it when finished.</p>
+      <label class="field-label" for="apiKeyInput">Gemini API key</label>
+      <input id="apiKeyInput" class="text-input" type="password" autocomplete="off" placeholder="AIza…">
+      <button type="button" class="primary-button" id="saveApiKey">Save key</button>
     </form>
   </dialog>
 
