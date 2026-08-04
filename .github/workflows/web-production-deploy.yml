@@ -1,12 +1,6 @@
 name: Deploy Production Website
 
 on:
-  push:
-    branches: [app]
-    paths:
-      - "web-worker/**"
-      - "web-mvp/**"
-      - ".github/workflows/web-production-deploy.yml"
   workflow_dispatch:
 
 concurrency:
