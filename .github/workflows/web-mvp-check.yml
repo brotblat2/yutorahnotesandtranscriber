@@ -1,0 +1,29 @@
+name: Web MVP Check
+
+on:
+  pull_request:
+    paths:
+      - "web-mvp/**"
+      - ".github/workflows/web-mvp-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check web-mvp/app.js
+          node --check web-mvp/service-worker.js
+
+      - name: Verify required files
+        run: |
+          test -f web-mvp/index.html
+          test -f web-mvp/styles.css
+          test -f web-mvp/manifest.webmanifest
