@@ -455,7 +455,7 @@ function createNoteCard(cacheKey, data) {
     else if (type === 'translated_heb') typeDisplay = 'Lashon Kodesh';
 
     return `
-        <div class="note-card" data-key="${cacheKey}" data-title="${title}" data-type="${type}">
+        <div class="note-card" data-key="${cacheKey}" data-title="${title}" data-type="${type}" data-timestamp="${data.timestamp || 0}">
             <div class="note-card-select">
                 <input type="checkbox" class="note-select-checkbox" data-key="${cacheKey}">
             </div>
@@ -898,12 +898,15 @@ function setupMergeExport() {
             }))
             .filter(({ card }) => card && card.style.display !== 'none' && !card.querySelector('.note-select-checkbox').checked);
 
-        // Select them in order (oldest to newest)
-        visibleCheckboxes.forEach(({ checkbox }) => {
-            checkbox.checked = true;
-            const event = new Event('change', { bubbles: true });
-            checkbox.dispatchEvent(event);
-        });
+        // The viewer displays newest first, but a complete merge should read as a series:
+        // select the oldest visible note first so it becomes the first merged document.
+        visibleCheckboxes
+            .sort(({ card: a }, { card: b }) => (Number(a.dataset.timestamp) || 0) - (Number(b.dataset.timestamp) || 0))
+            .forEach(({ checkbox }) => {
+                checkbox.checked = true;
+                const event = new Event('change', { bubbles: true });
+                checkbox.dispatchEvent(event);
+            });
     });
 
     // Deselect all notes

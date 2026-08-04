@@ -172,6 +172,16 @@ Rules:
 `
 };
 
+// This constraint is appended immediately before every request, including requests
+// that use a saved custom prompt, so no generation path can produce a chart.
+const NO_CHARTS_INSTRUCTION = `
+
+ABSOLUTE OUTPUT RESTRICTION — NO CHARTS OR DIAGRAMS: Never create, imitate, or describe a chart, graph, diagram, flowchart, decision tree, visual map, table, timeline, or side-by-side layout. This includes ASCII/Unicode art and pseudo-diagrams made with arrows, boxes, connector lines, indentation trees, or characters such as ─, │, ┌, ┐, └, ┘, ◄, ►, ▲, ▼, →, ←, or ⇒. Do not put ideas into visual arrangements or label-and-arrow chains. Even when the material has a logical sequence, write it as normal complete prose or standard Markdown headings and simple bullet lists only. Output must be clean, linear, readable text.`;
+
+function addNoChartsInstruction(prompt) {
+    return `${String(prompt || '').trim()}${NO_CHARTS_INSTRUCTION}`;
+}
+
 // Gemini API Client
 const GeminiAPI = {
     BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
@@ -311,6 +321,8 @@ const GeminiAPI = {
                     }
                 }
 
+                prompt = addNoChartsInstruction(prompt);
+
                 console.log(`Sending text request with type: \${requestType}`);
 
                 const body = {
@@ -427,6 +439,8 @@ const GeminiAPI = {
                         prompt = DEFAULT_PROMPTS.notes;
                     }
                 }
+
+                prompt = addNoChartsInstruction(prompt);
 
                 console.log(`Sending request with prompt type: ${requestType}`);
 
