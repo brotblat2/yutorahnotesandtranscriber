@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f6f4ef">
+  <meta name="theme-color" content="#667eea">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Shiur Notes">
@@ -11,6 +11,7 @@
   <title>Shiur Notes</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./extension-theme.css">
 </head>
 <body>
   <div class="app-shell">
@@ -45,7 +46,7 @@
       </button>
       <input id="audioFile" type="file" accept="audio/*" hidden>
       <button type="button" class="choice-button" id="pasteClipboard">
-        <span><strong>Paste from clipboard</strong><small>Use the link currently copied on your phone</small></span>
+        <span><strong>Paste from clipboard</strong><small>Use the link currently copied on your device</small></span>
       </button>
     </form>
   </dialog>
@@ -64,8 +65,11 @@
   </dialog>
 
   <div class="toast" id="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
   <script src="./app.js" defer></script>
   <script src="./link-resolver.js" defer></script>
   <script src="./production-api.js" defer></script>
+  <script src="./export-tools.js" defer></script>
 </body>
 </html>
