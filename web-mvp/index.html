@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#15233f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Shiur Notes">
+  <meta name="description" content="A tappable mobile prototype for turning shiurim into organized notes and transcripts.">
+  <title>Shiur Notes MVP</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="topbar">
+      <button class="icon-button hidden" id="backButton" aria-label="Go back">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <div>
+        <p class="eyebrow" id="screenEyebrow">SHIUR NOTES</p>
+        <h1 id="screenTitle">Home</h1>
+      </div>
+      <button class="icon-button" id="topAction" aria-label="Add a shiur">
+        <span aria-hidden="true">＋</span>
+      </button>
+    </header>
+
+    <main id="app" aria-live="polite"></main>
+
+    <nav class="tabbar" id="tabbar" aria-label="Primary navigation">
+      <button class="tab active" data-tab="home">
+        <span class="tab-icon" aria-hidden="true">⌂</span>
+        <span>Home</span>
+      </button>
+      <button class="tab" data-tab="library">
+        <span class="tab-icon" aria-hidden="true">▤</span>
+        <span>Library</span>
+      </button>
+      <button class="tab" data-tab="settings">
+        <span class="tab-icon" aria-hidden="true">⚙︎</span>
+        <span>Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <dialog id="addDialog" class="sheet">
+    <form method="dialog" class="sheet-card" id="addForm">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="sheet-heading">
+        <div>
+          <p class="eyebrow">NEW SHIUR</p>
+          <h2>Add a Shiur</h2>
+        </div>
+        <button class="close-button" value="cancel" aria-label="Close">×</button>
+      </div>
+
+      <label class="field-label" for="shiurUrl">Paste a YUTorah or Kol Halashon link</label>
+      <input id="shiurUrl" class="text-input" type="url" inputmode="url" autocomplete="url" placeholder="https://www.yutorah.org/lectures/...">
+      <p class="field-hint" id="urlHint">For the prototype, any link will open the confirmation flow.</p>
+
+      <button type="button" class="primary-button" id="continueLink">Continue with Link</button>
+      <div class="divider"><span>or</span></div>
+      <button type="button" class="choice-button" id="importAudio">
+        <span class="choice-symbol" aria-hidden="true">↑</span>
+        <span><strong>Import Audio</strong><small>Choose an MP3, M4A, or audio file</small></span>
+      </button>
+      <input id="audioFile" type="file" accept="audio/*" hidden>
+      <button type="button" class="choice-button" id="pasteClipboard">
+        <span class="choice-symbol" aria-hidden="true">▣</span>
+        <span><strong>Paste from Clipboard</strong><small>Use a copied shiur link</small></span>
+      </button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
