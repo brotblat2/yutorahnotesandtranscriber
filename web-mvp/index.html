@@ -56,7 +56,7 @@
         <div><p class="kicker">GEMINI</p><h2>Personal API key</h2></div>
         <button class="close-button" value="cancel">Close</button>
       </div>
-      <p class="notice">This web preview stores the key in this browser’s local storage. Use a restricted key and remove it when finished.</p>
+      <p class="notice">Your key is stored only in this browser. On the production site it is sent to the server for the current generation request and is not saved there.</p>
       <label class="field-label" for="apiKeyInput">Gemini API key</label>
       <input id="apiKeyInput" class="text-input" type="password" autocomplete="off" placeholder="AIza…">
       <button type="button" class="primary-button" id="saveApiKey">Save key</button>
@@ -66,5 +66,6 @@
   <div class="toast" id="toast" role="status"></div>
   <script src="./app.js" defer></script>
   <script src="./link-resolver.js" defer></script>
+  <script src="./production-api.js" defer></script>
 </body>
 </html>
