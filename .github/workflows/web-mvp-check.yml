@@ -20,10 +20,15 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check web-mvp/app.js
+          node --check web-mvp/link-resolver.js
+          node --check web-mvp/production-api.js
+          node --check web-mvp/export-tools.js
           node --check web-mvp/service-worker.js
 
       - name: Verify required files
         run: |
           test -f web-mvp/index.html
           test -f web-mvp/styles.css
+          test -f web-mvp/extension-theme.css
+          test -f web-mvp/export-tools.js
           test -f web-mvp/manifest.webmanifest
