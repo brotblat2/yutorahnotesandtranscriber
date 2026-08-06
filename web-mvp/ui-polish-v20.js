@@ -6,7 +6,7 @@
   style.textContent = `
     #addDialog .sheet-card {
       color: var(--ink);
-      max-height: min(90dvh, 780px);
+      max-height: min(92dvh, 820px);
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
@@ -18,9 +18,7 @@
       margin-bottom: 18px;
     }
 
-    #addDialog .sheet-head > div {
-      min-width: 0;
-    }
+    #addDialog .sheet-head > div { min-width: 0; }
 
     #addDialog .sheet-head h2 {
       color: var(--ink);
@@ -47,50 +45,10 @@
       box-shadow: 0 0 0 3px rgba(66, 133, 244, .22);
     }
 
-    #addDialog .yutorah-search-choice {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 14px;
-      min-height: 96px;
-      border: 1px solid rgba(102, 126, 234, .68);
-      border-radius: 14px;
-      background:
-        radial-gradient(circle at 100% 0%, rgba(118, 75, 162, .22), transparent 48%),
-        linear-gradient(135deg, rgba(66, 133, 244, .16), rgba(102, 126, 234, .08)),
-        var(--surface);
-      color: var(--ink);
-      padding: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
-    }
-
-    #addDialog .yutorah-search-choice:active {
-      transform: scale(.995);
-    }
-
-    #addDialog .yutorah-search-choice strong {
-      color: var(--ink);
-      font-size: 18px;
-      line-height: 1.25;
-    }
-
-    #addDialog .yutorah-search-choice small {
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.42;
-    }
-
-    #addDialog .search-choice-arrow {
-      color: var(--primary-color, #4285f4);
-      font-size: 31px;
-      line-height: 1;
-      font-weight: 400;
-    }
-
     #addDialog .field-label {
       color: var(--ink);
       line-height: 1.35;
+      margin-top: 0;
     }
 
     #addDialog .divider {
@@ -99,9 +57,7 @@
     }
 
     #addDialog .divider::before,
-    #addDialog .divider::after {
-      background: var(--line);
-    }
+    #addDialog .divider::after { background: var(--line); }
 
     #addDialog .text-input,
     #addDialog .choice-button {
@@ -131,6 +87,71 @@
       border-radius: 10px;
     }
 
+    #addDialog .iphone-shortcut-card {
+      margin-top: 22px;
+      border: 1px solid rgba(102, 126, 234, .52);
+      border-radius: 14px;
+      padding: 17px;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(118, 75, 162, .18), transparent 46%),
+        linear-gradient(135deg, rgba(66, 133, 244, .12), rgba(102, 126, 234, .06)),
+        var(--surface);
+      color: var(--ink);
+    }
+
+    #addDialog .iphone-shortcut-heading h3 {
+      margin: 9px 0 6px;
+      color: var(--ink);
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    #addDialog .iphone-shortcut-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    #addDialog .iphone-only-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: rgba(66, 133, 244, .15);
+      color: var(--primary-color, #4285f4);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    #addDialog .shortcut-install-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      margin-top: 15px;
+      border-radius: 9px;
+      background: var(--primary-color, #4285f4);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 750;
+    }
+
+    #addDialog .shortcut-install-button:active { transform: scale(.995); }
+
+    #addDialog .shortcut-steps {
+      margin: 15px 0 0;
+      padding-left: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    #addDialog .shortcut-steps li + li { margin-top: 5px; }
+    #addDialog .shortcut-steps strong { color: var(--ink); }
+
     @media (max-width: 560px) {
       #addDialog.sheet {
         width: 100%;
@@ -143,19 +164,9 @@
         border-radius: 24px 24px 0 0;
       }
 
-      #addDialog .sheet-head {
-        margin-bottom: 16px;
-      }
-
-      #addDialog .yutorah-search-choice {
-        min-height: 92px;
-        padding: 16px;
-      }
-
-      #addDialog .field-label {
-        margin-top: 15px;
-        font-size: 13px;
-      }
+      #addDialog .sheet-head { margin-bottom: 16px; }
+      #addDialog .field-label { font-size: 13px; }
+      #addDialog .iphone-shortcut-card { padding: 15px; }
     }
   `;
 
