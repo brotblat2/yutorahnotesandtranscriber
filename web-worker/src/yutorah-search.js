@@ -1,4 +1,4 @@
-const USER_AGENT = "Mozilla/5.0 (compatible; ShiurNotes/1.0; +https://github.com/brotblat2/yutorahnotesandtranscriber)";
+const USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 const SEARCH_LIMIT = 15;
 const TIMEOUT_MS = 20_000;
 
@@ -10,26 +10,66 @@ export async function handleYUTorahSearch(request) {
   if (query.length < 2) return json({ ok: false, error: "Enter at least two characters." }, 400);
   if (query.length > 160) return json({ ok: false, error: "Search is too long." }, 400);
 
-  const searchUrl = new URL("https://www.yutorah.org/search");
-  searchUrl.searchParams.set("s", query);
-  if (sort !== "relevance") searchUrl.searchParams.set("sort", sort);
+  const attempted = [];
+  let html = "";
+  for (const searchUrl of searchCandidates(query, sort)) {
+    attempted.push(searchUrl.hostname);
+    try {
+      const response = await fetch(searchUrl, {
+        headers: browserHeaders("https://www.yutorah.org/"),
+        redirect: "follow",
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+      });
+      if (!response.ok) continue;
+      const body = await response.text();
+      if (/lecture\.cfm\/\d+|\/lectures\/lecture\.cfm\/\d+/i.test(body)) {
+        html = body;
+        break;
+      }
+    } catch {
+      // Try the next YUTorah hostname or URL form.
+    }
+  }
 
-  const response = await fetch(searchUrl, {
-    headers: {
-      "User-Agent": USER_AGENT,
-      "Accept": "text/html,application/xhtml+xml"
-    },
-    redirect: "follow",
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    cf: { cacheTtl: 180, cacheEverything: true }
-  });
+  if (!html) {
+    return json({
+      ok: false,
+      error: "YUTorah blocked the search request. Please try again shortly.",
+      code: "YUTORAH_SEARCH_BLOCKED",
+      attempted
+    }, 502);
+  }
 
-  if (!response.ok) return json({ ok: false, error: `YUTorah search returned ${response.status}.` }, 502);
-  const html = await response.text();
   const candidates = extractLectureCandidates(html).slice(0, SEARCH_LIMIT);
-
   const results = (await Promise.all(candidates.map(candidate => enrichLecture(candidate)))).filter(Boolean);
   return json({ ok: true, query, results }, 200);
+}
+
+function searchCandidates(query, sort) {
+  const urls = [
+    new URL("https://www.yutorah.org/search"),
+    new URL("https://www.yutorah.org/search/"),
+    new URL("https://yutorah.org/search"),
+    new URL("https://v4.yutorah.org/search"),
+    new URL("https://cf.yutorah.org/search")
+  ];
+  return urls.map(searchUrl => {
+    searchUrl.searchParams.set("s", query);
+    if (sort !== "relevance") searchUrl.searchParams.set("sort", sort);
+    return searchUrl;
+  });
+}
+
+function browserHeaders(referer) {
+  return {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Referer": referer,
+    "Upgrade-Insecure-Requests": "1"
+  };
 }
 
 function normalizeSort(value) {
@@ -64,15 +104,29 @@ function extractLectureCandidates(html) {
 
 async function enrichLecture(candidate) {
   try {
-    const endpoint = `https://www.yutorah.org/sidebar/LectureData?shiurID=${candidate.id}`;
-    const response = await fetch(endpoint, {
-      headers: { "User-Agent": USER_AGENT, "Accept": "application/json,text/html,*/*" },
-      redirect: "follow",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      cf: { cacheTtl: 3600, cacheEverything: true }
-    });
+    const endpoints = [
+      `https://www.yutorah.org/sidebar/LectureData?shiurID=${candidate.id}`,
+      `https://yutorah.org/sidebar/LectureData?shiurID=${candidate.id}`,
+      `https://v4.yutorah.org/sidebar/LectureData?shiurID=${candidate.id}`
+    ];
 
-    const text = response.ok ? await response.text() : "";
+    let text = "";
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          headers: { ...browserHeaders(candidate.pageUrl), "Accept": "application/json,text/plain,text/html,*/*" },
+          redirect: "follow",
+          signal: AbortSignal.timeout(TIMEOUT_MS)
+        });
+        if (response.ok) {
+          text = await response.text();
+          if (text) break;
+        }
+      } catch {
+        // Try another endpoint.
+      }
+    }
+
     const combined = `${text}\n${candidate.context}`;
     const data = tryJson(text);
     const title = cleanText(
