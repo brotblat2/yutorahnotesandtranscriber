@@ -24,7 +24,7 @@ jobs:
           node --check web-mvp/link-resolver.js
           node --check web-mvp/production-api.js
           node --check web-mvp/export-tools.js
-          node --check web-mvp/direct-pdf.js
+          node --check web-mvp/continuous-pdf.js
           node --check web-mvp/service-worker.js
 
       - name: Verify required files
@@ -34,5 +34,5 @@ jobs:
           test -f web-mvp/extension-theme.css
           test -f web-mvp/state-bridge.js
           test -f web-mvp/export-tools.js
-          test -f web-mvp/direct-pdf.js
+          test -f web-mvp/continuous-pdf.js
           test -f web-mvp/manifest.webmanifest
