@@ -1,12 +1,12 @@
 import baseWorker from "./index.js";
-import { handleYUTorahSearch } from "./yutorah-search.js";
+import { handleYUTorahSearchV2 } from "./yutorah-search-v2.js";
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/api/yutorah/search" && request.method === "GET") {
       try {
-        return await handleYUTorahSearch(request);
+        return await handleYUTorahSearchV2(request, env, ctx, baseWorker);
       } catch (error) {
         console.error("[ShiurNotes YUTorah Search]", error);
         return new Response(JSON.stringify({ ok: false, error: "YUTorah search is temporarily unavailable." }), {
