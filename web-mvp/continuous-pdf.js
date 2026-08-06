@@ -5,6 +5,7 @@
   const TARGET_SCALE = 1.45;
   const MAX_CANVAS_DIMENSION = 16000;
   const MAX_CANVAS_AREA = 16000000;
+  const RTL_DOCUMENT_THRESHOLD = 0.70;
 
   function safeFilename(value, fallback = "shiur-notes") {
     return String(value || fallback)
@@ -21,11 +22,13 @@
     return appState.notes.find(item => item.id === appState.currentNoteId) || null;
   }
 
-  function isRtlText(value = "") {
+  function documentDirection(value = "") {
     const text = String(value);
     const hebrew = (text.match(/[\u0590-\u05FF]/g) || []).length;
     const latin = (text.match(/[A-Za-z]/g) || []).length;
-    return hebrew > latin;
+    const letters = hebrew + latin;
+    if (!letters) return "ltr";
+    return hebrew / letters >= RTL_DOCUMENT_THRESHOLD ? "rtl" : "ltr";
   }
 
   function exportCss() {
@@ -93,7 +96,28 @@
       }
       .single-pdf-content strong { color: #4285f4; font-weight: 700; }
       .single-pdf-content em { font-style: italic; }
-      .single-pdf-content [dir="rtl"] { text-align: right; }
+      .single-pdf-content[dir="ltr"],
+      .single-pdf-content[dir="ltr"] h1,
+      .single-pdf-content[dir="ltr"] h2,
+      .single-pdf-content[dir="ltr"] h3,
+      .single-pdf-content[dir="ltr"] h4,
+      .single-pdf-content[dir="ltr"] p,
+      .single-pdf-content[dir="ltr"] li,
+      .single-pdf-content[dir="ltr"] blockquote {
+        direction: ltr;
+        text-align: left;
+      }
+      .single-pdf-content[dir="rtl"],
+      .single-pdf-content[dir="rtl"] h1,
+      .single-pdf-content[dir="rtl"] h2,
+      .single-pdf-content[dir="rtl"] h3,
+      .single-pdf-content[dir="rtl"] h4,
+      .single-pdf-content[dir="rtl"] p,
+      .single-pdf-content[dir="rtl"] li,
+      .single-pdf-content[dir="rtl"] blockquote {
+        direction: rtl;
+        text-align: right;
+      }
     `;
   }
 
@@ -105,12 +129,19 @@
     document.head.appendChild(style);
   }
 
-  function applyDirections(root) {
-    root.querySelectorAll("h1, h2, h3, h4, p, li, blockquote").forEach(element => {
-      const rtl = isRtlText(element.textContent || "");
-      element.dir = rtl ? "rtl" : "ltr";
-      element.style.direction = rtl ? "rtl" : "ltr";
-      element.style.textAlign = rtl ? "right" : "left";
+  function applyDocumentDirection(root, note) {
+    const sourceText = note?.markdown || root.textContent || "";
+    const direction = documentDirection(sourceText);
+    const alignment = direction === "rtl" ? "right" : "left";
+
+    root.dir = direction;
+    root.style.direction = direction;
+    root.style.textAlign = alignment;
+
+    root.querySelectorAll("h1, h2, h3, h4, p, li, blockquote, ul, ol").forEach(element => {
+      element.dir = direction;
+      element.style.direction = direction;
+      element.style.textAlign = alignment;
     });
   }
 
@@ -151,7 +182,7 @@
     else body.textContent = note.markdown || "";
     while (body.firstChild) root.appendChild(body.firstChild);
 
-    applyDirections(root);
+    applyDocumentDirection(root, note);
     document.body.appendChild(root);
     return root;
   }
