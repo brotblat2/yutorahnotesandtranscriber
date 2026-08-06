@@ -1,10 +1,11 @@
 (() => {
-  const DOCUMENT_WIDTH = 816;
-  const DOCUMENT_MARGIN = 54;
-  const CONTENT_WIDTH = DOCUMENT_WIDTH - DOCUMENT_MARGIN * 2;
-  const TARGET_SCALE = 1.45;
-  const MAX_CANVAS_DIMENSION = 16000;
-  const MAX_CANVAS_AREA = 16000000;
+  const PAGE_WIDTH = 816;
+  const PAGE_HEIGHT = 1056;
+  const PAGE_MARGIN = 54;
+  const CONTENT_WIDTH = PAGE_WIDTH - PAGE_MARGIN * 2;
+  const CONTENT_HEIGHT = PAGE_HEIGHT - PAGE_MARGIN * 2;
+  const RENDER_SCALE = 1.35;
+  const MAX_CUT_BACKTRACK = 24;
   const RTL_DOCUMENT_THRESHOLD = 0.70;
 
   function safeFilename(value, fallback = "shiur-notes") {
@@ -34,7 +35,7 @@
   function exportCss() {
     return `
       * { box-sizing: border-box; }
-      .single-pdf-content {
+      .letter-pdf-content {
         width: ${CONTENT_WIDTH}px;
         margin: 0;
         background: #ffffff;
@@ -43,20 +44,20 @@
         font-size: 14.67px;
         line-height: 1.8;
       }
-      .single-pdf-content .pdf-title {
+      .letter-pdf-content .pdf-title {
         margin: 0 0 7px;
         color: #202124;
         font-size: 29px;
         line-height: 1.2;
         font-weight: 700;
       }
-      .single-pdf-content .pdf-meta {
+      .letter-pdf-content .pdf-meta {
         margin: 0 0 24px;
         color: #5f6368;
         font-size: 14px;
       }
-      .single-pdf-content h1,
-      .single-pdf-content h2 {
+      .letter-pdf-content h1,
+      .letter-pdf-content h2 {
         margin: 25px 0 10px;
         padding-bottom: 8px;
         border-bottom: 2px solid #4285f4;
@@ -64,29 +65,29 @@
         font-size: 22px;
         line-height: 1.3;
       }
-      .single-pdf-content h3 {
+      .letter-pdf-content h3 {
         margin: 20px 0 8px;
         color: #202124;
         font-size: 18px;
         line-height: 1.35;
       }
-      .single-pdf-content h4 {
+      .letter-pdf-content h4 {
         margin: 17px 0 7px;
         color: #202124;
         font-size: 16px;
       }
-      .single-pdf-content p { margin: 0 0 12px; }
-      .single-pdf-content ul,
-      .single-pdf-content ol {
+      .letter-pdf-content p { margin: 0 0 12px; }
+      .letter-pdf-content ul,
+      .letter-pdf-content ol {
         margin: 7px 0 13px;
         padding-inline-start: 25px;
       }
-      .single-pdf-content ul ul,
-      .single-pdf-content ol ol,
-      .single-pdf-content ul ol,
-      .single-pdf-content ol ul { margin: 5px 0 0; }
-      .single-pdf-content li { margin: 5px 0; }
-      .single-pdf-content blockquote {
+      .letter-pdf-content ul ul,
+      .letter-pdf-content ol ol,
+      .letter-pdf-content ul ol,
+      .letter-pdf-content ol ul { margin: 5px 0 0; }
+      .letter-pdf-content li { margin: 5px 0; }
+      .letter-pdf-content blockquote {
         margin: 15px 0;
         padding: 8px 14px;
         border-inline-start: 4px solid #4285f4;
@@ -94,27 +95,27 @@
         color: #3c4043;
         font-style: italic;
       }
-      .single-pdf-content strong { color: #4285f4; font-weight: 700; }
-      .single-pdf-content em { font-style: italic; }
-      .single-pdf-content[dir="ltr"],
-      .single-pdf-content[dir="ltr"] h1,
-      .single-pdf-content[dir="ltr"] h2,
-      .single-pdf-content[dir="ltr"] h3,
-      .single-pdf-content[dir="ltr"] h4,
-      .single-pdf-content[dir="ltr"] p,
-      .single-pdf-content[dir="ltr"] li,
-      .single-pdf-content[dir="ltr"] blockquote {
+      .letter-pdf-content strong { color: #4285f4; font-weight: 700; }
+      .letter-pdf-content em { font-style: italic; }
+      .letter-pdf-content[dir="ltr"],
+      .letter-pdf-content[dir="ltr"] h1,
+      .letter-pdf-content[dir="ltr"] h2,
+      .letter-pdf-content[dir="ltr"] h3,
+      .letter-pdf-content[dir="ltr"] h4,
+      .letter-pdf-content[dir="ltr"] p,
+      .letter-pdf-content[dir="ltr"] li,
+      .letter-pdf-content[dir="ltr"] blockquote {
         direction: ltr;
         text-align: left;
       }
-      .single-pdf-content[dir="rtl"],
-      .single-pdf-content[dir="rtl"] h1,
-      .single-pdf-content[dir="rtl"] h2,
-      .single-pdf-content[dir="rtl"] h3,
-      .single-pdf-content[dir="rtl"] h4,
-      .single-pdf-content[dir="rtl"] p,
-      .single-pdf-content[dir="rtl"] li,
-      .single-pdf-content[dir="rtl"] blockquote {
+      .letter-pdf-content[dir="rtl"],
+      .letter-pdf-content[dir="rtl"] h1,
+      .letter-pdf-content[dir="rtl"] h2,
+      .letter-pdf-content[dir="rtl"] h3,
+      .letter-pdf-content[dir="rtl"] h4,
+      .letter-pdf-content[dir="rtl"] p,
+      .letter-pdf-content[dir="rtl"] li,
+      .letter-pdf-content[dir="rtl"] blockquote {
         direction: rtl;
         text-align: right;
       }
@@ -122,9 +123,9 @@
   }
 
   function ensureStyles() {
-    if (document.getElementById("single-page-pdf-styles")) return;
+    if (document.getElementById("letter-pdf-export-styles")) return;
     const style = document.createElement("style");
-    style.id = "single-page-pdf-styles";
+    style.id = "letter-pdf-export-styles";
     style.textContent = exportCss();
     document.head.appendChild(style);
   }
@@ -148,7 +149,7 @@
   function buildDocument(note) {
     ensureStyles();
     const root = document.createElement("section");
-    root.className = "single-pdf-content";
+    root.className = "letter-pdf-content";
     root.style.cssText = [
       "position:absolute",
       "left:-100000px",
@@ -187,6 +188,63 @@
     return root;
   }
 
+  function collectLineCuts(root) {
+    const rootRect = root.getBoundingClientRect();
+    const cuts = new Set([0, Math.ceil(root.scrollHeight)]);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+
+    while ((node = walker.nextNode())) {
+      if (!node.nodeValue || !node.nodeValue.trim()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      for (const rect of range.getClientRects()) {
+        const bottom = Math.ceil(rect.bottom - rootRect.top + 2);
+        if (bottom > 0) cuts.add(bottom);
+      }
+      range.detach?.();
+    }
+
+    root.querySelectorAll("h1, h2, h3, h4, p, li, blockquote").forEach(element => {
+      const rect = element.getBoundingClientRect();
+      const bottom = Math.ceil(rect.bottom - rootRect.top + 2);
+      if (bottom > 0) cuts.add(bottom);
+    });
+
+    return [...cuts].sort((a, b) => a - b);
+  }
+
+  function makeSlices(totalHeight, lineCuts) {
+    const slices = [];
+    let start = 0;
+
+    while (start < totalHeight - 1) {
+      const physicalEnd = Math.min(totalHeight, start + CONTENT_HEIGHT);
+      if (physicalEnd >= totalHeight) {
+        slices.push({ start, end: totalHeight });
+        break;
+      }
+
+      const earliestSafeCut = physicalEnd - MAX_CUT_BACKTRACK;
+      let end = physicalEnd;
+      for (let index = lineCuts.length - 1; index >= 0; index--) {
+        const cut = lineCuts[index];
+        if (cut > physicalEnd) continue;
+        if (cut < earliestSafeCut) break;
+        if (cut > start + 40) {
+          end = cut;
+          break;
+        }
+      }
+
+      if (end <= start) end = physicalEnd;
+      slices.push({ start, end });
+      start = end;
+    }
+
+    return slices;
+  }
+
   function svgForDocument(root, contentHeight) {
     const clone = root.cloneNode(true);
     clone.removeAttribute("style");
@@ -211,31 +269,31 @@
     return image;
   }
 
-  function chooseCanvasScale(documentHeight) {
-    const dimensionScale = MAX_CANVAS_DIMENSION / Math.max(DOCUMENT_WIDTH, documentHeight);
-    const areaScale = Math.sqrt(MAX_CANVAS_AREA / Math.max(1, DOCUMENT_WIDTH * documentHeight));
-    return Math.max(0.5, Math.min(TARGET_SCALE, dimensionScale, areaScale));
-  }
-
-  async function renderSingleSheet(root) {
-    const contentHeight = Math.max(1, Math.ceil(root.scrollHeight));
-    const documentHeight = contentHeight + DOCUMENT_MARGIN * 2;
-    const scale = chooseCanvasScale(documentHeight);
-    const image = await renderDocumentImage(root, contentHeight);
-
+  async function sliceToJpeg(image, slice) {
+    const sliceHeight = Math.max(1, slice.end - slice.start);
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(DOCUMENT_WIDTH * scale));
-    canvas.height = Math.max(1, Math.round(documentHeight * scale));
+    canvas.width = Math.round(PAGE_WIDTH * RENDER_SCALE);
+    canvas.height = Math.round(PAGE_HEIGHT * RENDER_SCALE);
     const context = canvas.getContext("2d", { alpha: false });
     if (!context) throw new Error("Canvas rendering is unavailable.");
 
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, canvas.width, canvas.height);
-    context.scale(scale, scale);
-    context.drawImage(image, DOCUMENT_MARGIN, DOCUMENT_MARGIN, CONTENT_WIDTH, contentHeight);
+    context.scale(RENDER_SCALE, RENDER_SCALE);
+    context.drawImage(
+      image,
+      0,
+      slice.start,
+      CONTENT_WIDTH,
+      sliceHeight,
+      PAGE_MARGIN,
+      PAGE_MARGIN,
+      CONTENT_WIDTH,
+      sliceHeight
+    );
 
     const jpegBlob = await new Promise((resolve, reject) => {
-      canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not encode the PDF document.")), "image/jpeg", 0.94);
+      canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not encode the PDF page.")), "image/jpeg", 0.94);
     });
 
     return {
@@ -245,13 +303,11 @@
     };
   }
 
-  function buildSinglePagePdf(image) {
+  function buildPdf(images) {
     const encoder = new TextEncoder();
     const chunks = [];
     const offsets = [0];
     let length = 0;
-    const pageWidth = 612;
-    const pageHeight = pageWidth * image.height / image.width;
 
     const appendBytes = bytes => { chunks.push(bytes); length += bytes.length; };
     const appendText = text => appendBytes(encoder.encode(text));
@@ -260,39 +316,57 @@
 
     appendBytes(new Uint8Array([0x25,0x50,0x44,0x46,0x2d,0x31,0x2e,0x34,0x0a,0x25,0xe2,0xe3,0xcf,0xd3,0x0a]));
 
+    const pageObjects = [];
+    const imageObjects = [];
+    const contentObjects = [];
+    let nextObject = 3;
+    images.forEach(() => {
+      pageObjects.push(nextObject++);
+      imageObjects.push(nextObject++);
+      contentObjects.push(nextObject++);
+    });
+    const objectCount = nextObject - 1;
+
     beginObject(1);
     appendText("<< /Type /Catalog /Pages 2 0 R >>\n");
     endObject();
 
     beginObject(2);
-    appendText("<< /Type /Pages /Count 1 /Kids [3 0 R] >>\n");
+    appendText(`<< /Type /Pages /Count ${images.length} /Kids [${pageObjects.map(number => `${number} 0 R`).join(" ")}] >>\n`);
     endObject();
 
-    beginObject(3);
-    appendText(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth.toFixed(2)} ${pageHeight.toFixed(2)}] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>\n`);
-    endObject();
+    images.forEach((image, index) => {
+      const pageNumber = pageObjects[index];
+      const imageNumber = imageObjects[index];
+      const contentNumber = contentObjects[index];
+      const imageName = `Im${index + 1}`;
 
-    beginObject(4);
-    appendText(`<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`);
-    appendBytes(image.bytes);
-    appendText("\nendstream\n");
-    endObject();
+      beginObject(pageNumber);
+      appendText(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /${imageName} ${imageNumber} 0 R >> >> /Contents ${contentNumber} 0 R >>\n`);
+      endObject();
 
-    const stream = `q\n${pageWidth.toFixed(2)} 0 0 ${pageHeight.toFixed(2)} 0 0 cm\n/Im1 Do\nQ\n`;
-    const streamBytes = encoder.encode(stream);
-    beginObject(5);
-    appendText(`<< /Length ${streamBytes.length} >>\nstream\n`);
-    appendBytes(streamBytes);
-    appendText("endstream\n");
-    endObject();
+      beginObject(imageNumber);
+      appendText(`<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`);
+      appendBytes(image.bytes);
+      appendText("\nendstream\n");
+      endObject();
+
+      const stream = `q\n612 0 0 792 0 0 cm\n/${imageName} Do\nQ\n`;
+      const streamBytes = encoder.encode(stream);
+      beginObject(contentNumber);
+      appendText(`<< /Length ${streamBytes.length} >>\nstream\n`);
+      appendBytes(streamBytes);
+      appendText("endstream\n");
+      endObject();
+    });
 
     const xrefOffset = length;
-    appendText("xref\n0 6\n");
+    appendText(`xref\n0 ${objectCount + 1}\n`);
     appendText("0000000000 65535 f \n");
-    for (let number = 1; number <= 5; number++) {
+    for (let number = 1; number <= objectCount; number++) {
       appendText(`${String(offsets[number]).padStart(10, "0")} 00000 n \n`);
     }
-    appendText(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+    appendText(`trailer\n<< /Size ${objectCount + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
 
     return new Blob(chunks, { type: "application/pdf" });
   }
@@ -309,12 +383,23 @@
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   }
 
-  async function downloadSinglePagePdf(note) {
+  async function downloadLetterPdf(note, onProgress) {
     if (document.fonts?.ready) await document.fonts.ready;
     const root = buildDocument(note);
+
     try {
-      const image = await renderSingleSheet(root);
-      const pdf = buildSinglePagePdf(image);
+      const totalHeight = Math.max(1, Math.ceil(root.scrollHeight));
+      const lineCuts = collectLineCuts(root);
+      const slices = makeSlices(totalHeight, lineCuts);
+      const image = await renderDocumentImage(root, totalHeight);
+      const pages = [];
+
+      for (let index = 0; index < slices.length; index++) {
+        onProgress?.(index + 1, slices.length);
+        pages.push(await sliceToJpeg(image, slices[index]));
+      }
+
+      const pdf = buildPdf(pages);
       triggerDownload(pdf, `${safeFilename(`${note.title || "Shiur Notes"}-${note.type || "notes"}`)}.pdf`);
     } finally {
       root.remove();
@@ -334,10 +419,12 @@
     button.disabled = true;
     button.textContent = "Preparing…";
     try {
-      await downloadSinglePagePdf(note);
+      await downloadLetterPdf(note, (current, total) => {
+        button.textContent = total > 1 ? `PDF ${current}/${total}` : "Preparing…";
+      });
       window.showToast?.("PDF downloaded");
     } catch (error) {
-      console.error("Single-page PDF export failed:", error);
+      console.error("Letter PDF export failed:", error);
       window.showToast?.(error.message || "PDF export failed");
       if (!window.showToast) alert(error.message || "PDF export failed");
     } finally {
