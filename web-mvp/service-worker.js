@@ -1,5 +1,5 @@
-const CACHE_NAME = "shiur-notes-web-v17";
-const ASSETS = ["./", "./index.html", "./styles.css", "./extension-theme.css", "./app.js", "./state-bridge.js", "./link-resolver.js", "./production-api.js", "./export-tools.js", "./continuous-pdf.js", "./manifest.webmanifest", "./icon.svg"];
+const CACHE_NAME = "shiur-notes-web-v18";
+const ASSETS = ["./", "./index.html", "./styles.css", "./extension-theme.css", "./app.js", "./state-bridge.js", "./link-resolver.js", "./production-api.js", "./export-tools.js", "./pdf-export-v18.js?v=18", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
@@ -19,7 +19,7 @@ self.addEventListener("fetch", event => {
   if (url.pathname.startsWith("/api/") || url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request).then(response => {
+    fetch(event.request, { cache: "no-store" }).then(response => {
       const copy = response.clone();
       caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
       return response;
