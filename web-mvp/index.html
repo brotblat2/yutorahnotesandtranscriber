@@ -41,21 +41,6 @@
       <input id="shiurUrl" class="text-input" type="url" inputmode="url" autocomplete="url" placeholder="Paste a link">
       <button type="button" class="primary-button" id="continueLink">Continue with link</button>
 
-      <section class="iphone-shortcut-card" aria-labelledby="iphoneShortcutTitle">
-        <div class="iphone-shortcut-heading">
-          <span class="iphone-only-badge">iPhone only</span>
-          <h3 id="iphoneShortcutTitle">Send a shiur here from the Share menu</h3>
-          <p>Install the free Shiur Notes Shortcut once, then use it directly from YUTorah.</p>
-        </div>
-        <a class="shortcut-install-button" href="https://www.icloud.com/shortcuts/1fd32259954f4cffb564cafc3690bc89" target="_blank" rel="noopener noreferrer">Install iPhone Shortcut</a>
-        <ol class="shortcut-steps">
-          <li>Open the shortcut link and tap <strong>Add Shortcut</strong>.</li>
-          <li>Open a shiur on YUTorah and tap <strong>Share</strong>.</li>
-          <li>Choose <strong>Shiur Notes</strong>.</li>
-          <li>Pick <strong>Notes</strong>, <strong>Transcript</strong>, or <strong>Maamar</strong> here.</li>
-        </ol>
-      </section>
-
       <div class="divider"><span>or import audio</span></div>
       <button type="button" class="choice-button" id="importAudio">
         <span><strong>Import an audio file</strong><small>MP3, M4A, WAV, or another supported format</small></span>
@@ -82,6 +67,7 @@
 
   <div class="toast" id="toast" role="status"></div>
   <script src="./app.js" defer></script>
+  <script src="./home-shortcut-v23.js?v=23" defer></script>
   <script src="./state-bridge.js" defer></script>
   <script src="./link-resolver.js" defer></script>
   <script src="./production-api.js" defer></script>
