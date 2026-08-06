@@ -37,6 +37,10 @@
       * { box-sizing: border-box; }
       .letter-pdf-content {
         width: ${CONTENT_WIDTH}px;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
         margin: 0;
         background: #ffffff;
         color: #202124;
@@ -155,6 +159,10 @@
       "left:-100000px",
       "top:0",
       `width:${CONTENT_WIDTH}px`,
+      "height:auto",
+      "min-height:0",
+      "max-height:none",
+      "overflow:visible",
       "margin:0",
       "background:#ffffff",
       "color:#202124",
@@ -188,9 +196,9 @@
     return root;
   }
 
-  function collectLineCuts(root) {
+  function textLineBottoms(root) {
     const rootRect = root.getBoundingClientRect();
-    const cuts = new Set([0, Math.ceil(root.scrollHeight)]);
+    const bottoms = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let node;
 
@@ -199,18 +207,38 @@
       const range = document.createRange();
       range.selectNodeContents(node);
       for (const rect of range.getClientRects()) {
-        const bottom = Math.ceil(rect.bottom - rootRect.top + 2);
-        if (bottom > 0) cuts.add(bottom);
+        if (rect.width <= 0 || rect.height <= 0) continue;
+        const bottom = rect.bottom - rootRect.top;
+        if (bottom > 0 && Number.isFinite(bottom)) bottoms.push(bottom);
       }
       range.detach?.();
     }
 
-    root.querySelectorAll("h1, h2, h3, h4, p, li, blockquote").forEach(element => {
+    return bottoms;
+  }
+
+  function measureContentHeight(root) {
+    const rootRect = root.getBoundingClientRect();
+    const lineBottoms = textLineBottoms(root);
+    let bottom = lineBottoms.length ? Math.max(...lineBottoms) : 0;
+
+    root.querySelectorAll("img, svg, canvas, table, pre, hr").forEach(element => {
+      const style = getComputedStyle(element);
+      if (style.display === "none" || style.visibility === "hidden") return;
       const rect = element.getBoundingClientRect();
-      const bottom = Math.ceil(rect.bottom - rootRect.top + 2);
-      if (bottom > 0) cuts.add(bottom);
+      if (rect.width <= 0 || rect.height <= 0) return;
+      bottom = Math.max(bottom, rect.bottom - rootRect.top);
     });
 
+    return Math.max(1, Math.ceil(bottom + 18));
+  }
+
+  function collectLineCuts(root, totalHeight) {
+    const cuts = new Set([0, totalHeight]);
+    textLineBottoms(root).forEach(bottom => {
+      const cut = Math.ceil(bottom + 2);
+      if (cut > 0 && cut < totalHeight) cuts.add(cut);
+    });
     return [...cuts].sort((a, b) => a - b);
   }
 
@@ -269,12 +297,25 @@
     return image;
   }
 
+  function canvasHasVisibleContent(context, width, height) {
+    const pixels = context.getImageData(0, 0, width, height).data;
+    let visibleSamples = 0;
+    const stride = 4 * 8;
+    for (let index = 0; index < pixels.length; index += stride) {
+      if (pixels[index] < 248 || pixels[index + 1] < 248 || pixels[index + 2] < 248) {
+        visibleSamples += 1;
+        if (visibleSamples >= 24) return true;
+      }
+    }
+    return false;
+  }
+
   async function sliceToJpeg(image, slice) {
     const sliceHeight = Math.max(1, slice.end - slice.start);
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(PAGE_WIDTH * RENDER_SCALE);
     canvas.height = Math.round(PAGE_HEIGHT * RENDER_SCALE);
-    const context = canvas.getContext("2d", { alpha: false });
+    const context = canvas.getContext("2d", { alpha: false, willReadFrequently: true });
     if (!context) throw new Error("Canvas rendering is unavailable.");
 
     context.fillStyle = "#ffffff";
@@ -291,7 +332,9 @@
       CONTENT_WIDTH,
       sliceHeight
     );
+    context.setTransform(1, 0, 0, 1, 0, 0);
 
+    const hasContent = canvasHasVisibleContent(context, canvas.width, canvas.height);
     const jpegBlob = await new Promise((resolve, reject) => {
       canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not encode the PDF page.")), "image/jpeg", 0.94);
     });
@@ -299,7 +342,8 @@
     return {
       bytes: new Uint8Array(await jpegBlob.arrayBuffer()),
       width: canvas.width,
-      height: canvas.height
+      height: canvas.height,
+      hasContent
     };
   }
 
@@ -388,8 +432,9 @@
     const root = buildDocument(note);
 
     try {
-      const totalHeight = Math.max(1, Math.ceil(root.scrollHeight));
-      const lineCuts = collectLineCuts(root);
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const totalHeight = measureContentHeight(root);
+      const lineCuts = collectLineCuts(root, totalHeight);
       const slices = makeSlices(totalHeight, lineCuts);
       const image = await renderDocumentImage(root, totalHeight);
       const pages = [];
@@ -398,6 +443,8 @@
         onProgress?.(index + 1, slices.length);
         pages.push(await sliceToJpeg(image, slices[index]));
       }
+
+      while (pages.length > 1 && !pages[pages.length - 1].hasContent) pages.pop();
 
       const pdf = buildPdf(pages);
       triggerDownload(pdf, `${safeFilename(`${note.title || "Shiur Notes"}-${note.type || "notes"}`)}.pdf`);
