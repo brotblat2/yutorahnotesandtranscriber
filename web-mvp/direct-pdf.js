@@ -106,6 +106,14 @@
     `;
   }
 
+  function ensureMeasurementStyles() {
+    if (document.getElementById("local-pdf-export-styles")) return;
+    const style = document.createElement("style");
+    style.id = "local-pdf-export-styles";
+    style.textContent = exportCss();
+    document.head.appendChild(style);
+  }
+
   function makePage() {
     const page = document.createElement("section");
     page.className = "pdf-page";
@@ -233,9 +241,8 @@
 
   async function pageToJpeg(page) {
     const svg = svgForPage(page);
-    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    try {
+    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    {
       const image = new Image();
       image.decoding = "async";
       const loaded = new Promise((resolve, reject) => {
@@ -263,8 +270,6 @@
         width: canvas.width,
         height: canvas.height
       };
-    } finally {
-      URL.revokeObjectURL(url);
     }
   }
 
@@ -357,6 +362,7 @@
 
   async function downloadPdf(note, onProgress) {
     if (document.fonts?.ready) await document.fonts.ready;
+    ensureMeasurementStyles();
     const pages = paginate(note);
     if (!pages.length) throw new Error("There is no content to export.");
 
