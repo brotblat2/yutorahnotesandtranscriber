@@ -1,5 +1,5 @@
-const CACHE_NAME = "shiur-notes-web-v11";
-const ASSETS = ["./", "./index.html", "./styles.css", "./extension-theme.css", "./app.js", "./state-bridge.js", "./link-resolver.js", "./production-api.js", "./export-tools.js", "./direct-pdf.js", "./manifest.webmanifest", "./icon.svg"];
+const CACHE_NAME = "shiur-notes-web-v12";
+const ASSETS = ["./", "./index.html", "./styles.css", "./extension-theme.css", "./app.js", "./state-bridge.js", "./link-resolver.js", "./production-api.js", "./export-tools.js", "./continuous-pdf.js", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
