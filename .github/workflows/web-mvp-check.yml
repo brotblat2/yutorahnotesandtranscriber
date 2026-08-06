@@ -23,6 +23,7 @@ jobs:
           node --check web-mvp/state-bridge.js
           node --check web-mvp/link-resolver.js
           node --check web-mvp/production-api.js
+          node --check web-mvp/share-intake.js
           node --check web-mvp/yutorah-search.js
           node --check web-mvp/ui-polish-v20.js
           node --check web-mvp/export-tools.js
@@ -35,6 +36,7 @@ jobs:
           test -f web-mvp/styles.css
           test -f web-mvp/extension-theme.css
           test -f web-mvp/state-bridge.js
+          test -f web-mvp/share-intake.js
           test -f web-mvp/yutorah-search.js
           test -f web-mvp/ui-polish-v20.js
           test -f web-mvp/export-tools.js
