@@ -20,6 +20,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check web-mvp/app.js
+          node --check web-mvp/home-shortcut-v23.js
           node --check web-mvp/state-bridge.js
           node --check web-mvp/link-resolver.js
           node --check web-mvp/production-api.js
@@ -34,6 +35,7 @@ jobs:
           test -f web-mvp/index.html
           test -f web-mvp/styles.css
           test -f web-mvp/extension-theme.css
+          test -f web-mvp/home-shortcut-v23.js
           test -f web-mvp/state-bridge.js
           test -f web-mvp/share-intake.js
           test -f web-mvp/ui-polish-v20.js
