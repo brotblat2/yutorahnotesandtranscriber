@@ -1,5 +1,5 @@
 (() => {
-  const SHORTCUT_URL = "https://www.icloud.com/shortcuts/1fd32259954f4cffb564cafc3690bc89";
+  const SHORTCUT_URL = "https://www.icloud.com/shortcuts/d6ccbb97e60240199c52b0b62f814acb";
 
   renderHome = function renderHomeWithShortcut() {
     configure("Home", { add: true });
