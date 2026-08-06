@@ -3,6 +3,7 @@
   const PAGE_HEIGHT = 1056;
   const PAGE_PADDING = 54;
   const RENDER_SCALE = 1.6;
+  const HEADING_PREVIEW_CHARS = 150;
 
   function safeFilename(value, fallback = "shiur-notes") {
     return String(value || fallback)
@@ -38,6 +39,7 @@
   function exportCss() {
     return `
       * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: #ffffff; }
       .pdf-page {
         width: ${PAGE_WIDTH}px;
         height: ${PAGE_HEIGHT}px;
@@ -92,6 +94,7 @@
       .pdf-page ul ol,
       .pdf-page ol ul { margin: 5px 0 0; }
       .pdf-page li { margin: 5px 0; }
+      .pdf-page li.pdf-list-continuation { list-style-type: none; }
       .pdf-page blockquote {
         margin: 15px 0;
         padding: 8px 14px;
@@ -124,7 +127,8 @@
       `width:${PAGE_WIDTH}px`,
       `height:${PAGE_HEIGHT}px`,
       "overflow:hidden",
-      "background:#fff",
+      "background:#ffffff",
+      "color:#202124",
       "z-index:-1"
     ].join(";");
     document.body.appendChild(page);
@@ -176,53 +180,194 @@
     return blocks;
   }
 
+  function isHeading(block) {
+    return /^H[1-4]$/.test(block?.tagName || "");
+  }
+
+  function splitContainer(block) {
+    if (!block) return null;
+    if (block.tagName === "UL" || block.tagName === "OL") return block.firstElementChild;
+    if (block.tagName === "P" || block.tagName === "BLOCKQUOTE") return block;
+    return null;
+  }
+
+  function textNodes(root) {
+    const nodes = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) nodes.push(node);
+    return nodes;
+  }
+
+  function locateTextOffset(root, requestedOffset) {
+    const nodes = textNodes(root);
+    if (!nodes.length) return null;
+    let remaining = Math.max(0, requestedOffset);
+    for (const node of nodes) {
+      const length = node.nodeValue?.length || 0;
+      if (remaining <= length) return { node, offset: remaining };
+      remaining -= length;
+    }
+    const last = nodes[nodes.length - 1];
+    return { node: last, offset: last.nodeValue?.length || 0 };
+  }
+
+  function cloneTextChunk(block, start, end, continuation = false) {
+    const sourceContainer = splitContainer(block);
+    if (!sourceContainer) return block.cloneNode(true);
+    const startPoint = locateTextOffset(sourceContainer, start);
+    const endPoint = locateTextOffset(sourceContainer, end);
+    if (!startPoint || !endPoint) return block.cloneNode(true);
+
+    const range = document.createRange();
+    range.setStart(startPoint.node, startPoint.offset);
+    range.setEnd(endPoint.node, endPoint.offset);
+    const fragment = range.cloneContents();
+
+    if (block.tagName === "UL" || block.tagName === "OL") {
+      const list = block.cloneNode(false);
+      const item = sourceContainer.cloneNode(false);
+      if (continuation) item.classList.add("pdf-list-continuation");
+      item.appendChild(fragment);
+      list.appendChild(item);
+      return list;
+    }
+
+    const clone = block.cloneNode(false);
+    clone.appendChild(fragment);
+    return clone;
+  }
+
+  function breakPositions(text, start, end = text.length) {
+    const positions = [];
+    for (let index = start + 1; index <= end; index++) {
+      if (index === end || /[\s,.;:!?\-–—)]/.test(text[index - 1] || "")) positions.push(index);
+    }
+    return positions;
+  }
+
+  function fits(page, node) {
+    page.appendChild(node);
+    const result = page.scrollHeight <= PAGE_HEIGHT;
+    page.removeChild(node);
+    return result;
+  }
+
+  function previewBlock(block, maxChars = HEADING_PREVIEW_CHARS) {
+    const container = splitContainer(block);
+    if (!container) return block.cloneNode(true);
+    const text = container.textContent || "";
+    if (text.length <= maxChars) return block.cloneNode(true);
+    const candidates = breakPositions(text, 0, Math.min(text.length, maxChars));
+    const end = candidates.length ? candidates[candidates.length - 1] : Math.min(text.length, maxChars);
+    return cloneTextChunk(block, 0, end, false);
+  }
+
   function paginate(note) {
     const pages = [];
-    let page = makePage();
     const blocks = contentBlocks(note);
+    let page = makePage();
 
     const finalize = () => {
+      if (!page || !page.children.length) return;
       applyDirections(page);
       pages.push(page);
-      page = null;
+      page = makePage();
     };
 
-    blocks.forEach((block, index) => {
-      page.appendChild(block);
-      if (page.scrollHeight <= PAGE_HEIGHT) return;
-
-      page.removeChild(block);
-      if (page.children.length) finalize();
-      page = makePage();
-      page.appendChild(block);
-
-      if (page.scrollHeight > PAGE_HEIGHT && (block.tagName === "P" || block.tagName === "BLOCKQUOTE")) {
-        const text = block.textContent || "";
-        const words = text.split(/\s+/).filter(Boolean);
-        page.removeChild(block);
-        let chunk = document.createElement(block.tagName.toLowerCase());
-        if (block.tagName === "BLOCKQUOTE") chunk.className = block.className;
-        page.appendChild(chunk);
-        for (const word of words) {
-          const previous = chunk.textContent;
-          chunk.textContent = previous ? `${previous} ${word}` : word;
-          if (page.scrollHeight > PAGE_HEIGHT) {
-            chunk.textContent = previous;
-            finalize();
-            page = makePage();
-            chunk = document.createElement(block.tagName.toLowerCase());
-            if (block.tagName === "BLOCKQUOTE") chunk.className = block.className;
-            chunk.textContent = word;
-            page.appendChild(chunk);
-          }
-        }
+    const addSplitBlock = block => {
+      const container = splitContainer(block);
+      if (!container) {
+        if (page.children.length) finalize();
+        page.appendChild(block);
+        return;
       }
 
-      if (index === blocks.length - 1 && page && page.children.length) finalize();
-    });
+      const text = container.textContent || "";
+      let start = 0;
+      let continuation = false;
 
-    if (page && page.children.length) finalize();
-    else if (page) page.remove();
+      while (start < text.length) {
+        while (start < text.length && /\s/.test(text[start])) start++;
+        if (start >= text.length) break;
+
+        const fullChunk = cloneTextChunk(block, start, text.length, continuation);
+        if (fits(page, fullChunk)) {
+          page.appendChild(fullChunk);
+          start = text.length;
+          break;
+        }
+
+        const candidates = breakPositions(text, start);
+        let low = 0;
+        let high = candidates.length - 1;
+        let best = -1;
+        while (low <= high) {
+          const middle = Math.floor((low + high) / 2);
+          const end = candidates[middle];
+          const candidate = cloneTextChunk(block, start, end, continuation);
+          if (fits(page, candidate)) {
+            best = end;
+            low = middle + 1;
+          } else {
+            high = middle - 1;
+          }
+        }
+
+        if (best <= start) {
+          if (page.children.length) {
+            finalize();
+            continue;
+          }
+
+          let fallbackEnd = Math.min(text.length, start + 1);
+          while (fallbackEnd < text.length) {
+            const candidate = cloneTextChunk(block, start, fallbackEnd + 1, continuation);
+            if (!fits(page, candidate)) break;
+            fallbackEnd++;
+          }
+          best = Math.max(start + 1, fallbackEnd);
+        }
+
+        page.appendChild(cloneTextChunk(block, start, best, continuation));
+        start = best;
+        continuation = true;
+        if (start < text.length) finalize();
+      }
+    };
+
+    for (let index = 0; index < blocks.length; index++) {
+      const block = blocks[index];
+
+      if (isHeading(block) && page.children.length && blocks[index + 1]) {
+        const headingProbe = block.cloneNode(true);
+        const contentProbe = previewBlock(blocks[index + 1]);
+        page.appendChild(headingProbe);
+        page.appendChild(contentProbe);
+        const keepTogetherFits = page.scrollHeight <= PAGE_HEIGHT;
+        headingProbe.remove();
+        contentProbe.remove();
+        if (!keepTogetherFits) finalize();
+      }
+
+      page.appendChild(block);
+      if (page.scrollHeight <= PAGE_HEIGHT) continue;
+      page.removeChild(block);
+
+      if (splitContainer(block)) {
+        addSplitBlock(block);
+      } else {
+        if (page.children.length) finalize();
+        page.appendChild(block);
+      }
+    }
+
+    if (page.children.length) {
+      applyDirections(page);
+      pages.push(page);
+    } else {
+      page.remove();
+    }
     return pages;
   }
 
@@ -233,8 +378,9 @@
     const markup = clone.outerHTML;
     return `<?xml version="1.0" encoding="UTF-8"?>
       <svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}">
+        <rect x="0" y="0" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" fill="#ffffff"/>
         <foreignObject x="0" y="0" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}">
-          <div xmlns="http://www.w3.org/1999/xhtml"><style>${exportCss()}</style>${markup}</div>
+          <div xmlns="http://www.w3.org/1999/xhtml" style="width:${PAGE_WIDTH}px;height:${PAGE_HEIGHT}px;background:#ffffff;"><style>${exportCss()}</style>${markup}</div>
         </foreignObject>
       </svg>`;
   }
@@ -242,35 +388,35 @@
   async function pageToJpeg(page) {
     const svg = svgForPage(page);
     const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    {
-      const image = new Image();
-      image.decoding = "async";
-      const loaded = new Promise((resolve, reject) => {
-        image.onload = resolve;
-        image.onerror = () => reject(new Error("The browser could not render the PDF page."));
-      });
-      image.src = url;
-      await loaded;
+    const image = new Image();
+    image.decoding = "async";
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("The browser could not render the PDF page."));
+    });
+    image.src = url;
+    await loaded;
 
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(PAGE_WIDTH * RENDER_SCALE);
-      canvas.height = Math.round(PAGE_HEIGHT * RENDER_SCALE);
-      const context = canvas.getContext("2d", { alpha: false });
-      if (!context) throw new Error("Canvas rendering is unavailable.");
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.scale(RENDER_SCALE, RENDER_SCALE);
-      context.drawImage(image, 0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(PAGE_WIDTH * RENDER_SCALE);
+    canvas.height = Math.round(PAGE_HEIGHT * RENDER_SCALE);
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) throw new Error("Canvas rendering is unavailable.");
+    context.save();
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.scale(RENDER_SCALE, RENDER_SCALE);
+    context.drawImage(image, 0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+    context.restore();
 
-      const jpegBlob = await new Promise((resolve, reject) => {
-        canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not encode the PDF page.")), "image/jpeg", 0.94);
-      });
-      return {
-        bytes: new Uint8Array(await jpegBlob.arrayBuffer()),
-        width: canvas.width,
-        height: canvas.height
-      };
-    }
+    const jpegBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not encode the PDF page.")), "image/jpeg", 0.94);
+    });
+    return {
+      bytes: new Uint8Array(await jpegBlob.arrayBuffer()),
+      width: canvas.width,
+      height: canvas.height
+    };
   }
 
   function buildPdf(images) {
