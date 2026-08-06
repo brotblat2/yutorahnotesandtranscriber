@@ -11,7 +11,7 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "ALLOWED_ORIGIN": "https://brotblat2.github.io"
+    "ALLOWED_ORIGIN": "https://shiurnotes.com"
   },
   "observability": {
     "enabled": true
