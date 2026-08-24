@@ -116,9 +116,11 @@ If you cannot access the audio, respond: "sorry can't access the audio file"`,
 Follow these rules strictly to create comprehensive, highly structured notes of this audio file:
 
 Language & Script Rules
-English Only: Write all explanatory content, descriptions, and analysis in English.
+  English Only: Write all explanatory content, descriptions, analysis, section headings, and bullet points in English.
 
-Hebrew Script Only: Write Hebrew terms, phrases, and textual quotations in Hebrew script only (do not translate or transliterate them).
+  This remains mandatory even when the shiur is entirely in Hebrew or Yiddish: translate the speaker's explanations into clear English. Do not write Hebrew sentences or Hebrew-only sections.
+
+  Hebrew Script Only: Use Hebrew script only for individual Hebrew terms, short phrases, names of sources, and direct textual quotations (do not translate or transliterate them). Do not use it for the surrounding explanation.
 
 Formatting Rules (Markdown Only)
 Use ## for major conceptual sections.
@@ -141,6 +143,8 @@ Source Integration: If this is a Talmudic shiur, explicitly detail how the logic
 Zero Hallucination: Every point must be derived directly from the audio. Do not add outside knowledge or logistical/administrative details. Maintain this depth consistently from the beginning to the end of the file.
 
 If you cannot access the contents of the audio file or if it is silent/invalid, respond with exactly: "sorry can't access the audio file"
+
+Final language check before responding: every heading and every explanatory bullet must be English. Hebrew may appear only within an English sentence as a source, quotation, or term.
 `,
 
 enhance_transcript: `Please enhance this transcript.
@@ -737,9 +741,9 @@ const GeminiAPI = {
     },
 
     /**
-     * Process shiur from MP3 URL directly (no scraping needed)
+     * Process shiur from a direct audio URL.
      * @param {string} apiKey - Gemini API key
-     * @param {string} mp3Url - Direct URL to MP3 file
+     * @param {string} mp3Url - Direct URL to an audio file
      * @param {string} requestType - Type of request ('notes', 'transcript', 'maamar', 'ocr')
      * @param {function} progressCallback - Optional callback for progress updates
      * @returns {string} Generated content
@@ -758,6 +762,8 @@ const GeminiAPI = {
         const blob = await this.downloadMP3(mp3Url);
 
         const fileSizeMB = blob.size / 1024 / 1024;
+        const path = new URL(mp3Url).pathname.toLowerCase();
+        const mimeType = blob.type || (path.endsWith('.m4a') || path.endsWith('.mp4') ? 'audio/mp4' : 'audio/mpeg');
         console.log(`Downloaded ${fileSizeMB.toFixed(2)}MB audio file`);
 
         // Chunked transcription is disabled - AudioChunker utility not implemented
@@ -769,7 +775,7 @@ const GeminiAPI = {
 
         // Standard processing for all modes and files
         console.log('Uploading to Gemini...');
-        const file = await this.uploadFile(apiKey, blob);
+        const file = await this.uploadFile(apiKey, blob, mimeType);
 
         console.log('Generating content with type:', effectiveRequestType);
 
@@ -782,7 +788,7 @@ const GeminiAPI = {
             }
         }
 
-        const result = await this.generateContent(apiKey, file.uri, effectiveRequestType, customPrompts, 'audio/mpeg', options);
+        const result = await this.generateContent(apiKey, file.uri, effectiveRequestType, customPrompts, mimeType, options);
         console.log('Processing complete');
         return result;
     }

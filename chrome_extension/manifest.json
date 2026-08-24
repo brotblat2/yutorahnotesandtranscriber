@@ -10,6 +10,8 @@
   "host_permissions": [
     "*://*.yutorah.org/*",
     "*://*.kolhalashon.com/*",
+    "*://*.shiurbank.org/*",
+    "https://s3.wasabisys.com/*",
     "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
@@ -19,7 +21,8 @@
     {
       "matches": [
         "*://*.yutorah.org/*",
-        "*://*.kolhalashon.com/*"
+        "*://*.kolhalashon.com/*",
+        "*://*.shiurbank.org/*"
       ],
       "js": [
         "storage.js",
@@ -51,7 +54,8 @@
       ],
       "matches": [
         "*://*.yutorah.org/*",
-        "*://*.kolhalashon.com/*"
+        "*://*.kolhalashon.com/*",
+        "*://*.shiurbank.org/*"
       ]
     }
   ],

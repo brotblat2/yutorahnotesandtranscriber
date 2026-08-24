@@ -621,7 +621,7 @@ chrome.runtime.onStartup.addListener(resumePersistedBulkJob);
  * Handle shiur processing request
  */
 async function handleProcessShiur(request, sendResponse) {
-    const { mp3Url, type, pageUrl, pageTitle, metadata } = request;
+    const { mp3Url, type, pageUrl, pageId: requestedPageId, pageTitle, metadata } = request;
 
     try {
         if (!mp3Url) {
@@ -641,6 +641,7 @@ async function handleProcessShiur(request, sendResponse) {
                 const hostname = new URL(url).hostname;
                 if (hostname.includes('yutorah.org')) return 'yutorah';
                 if (hostname.includes('kolhalashon.com')) return 'kolhalashon';
+                if (hostname.includes('shiurbank.org')) return 'shiurbank';
                 return 'unknown';
             } catch (e) {
                 console.error('Error parsing URL for site prefix:', e);
@@ -652,7 +653,7 @@ async function handleProcessShiur(request, sendResponse) {
 
         if (pageUrl) {
             // Try to extract ID from page URL
-            let pageId;
+            let pageId = requestedPageId || null;
 
             if (sitePrefix === 'yutorah') {
                 // YUTorah pattern: /lectures/123456 or /lecture.cfm/123456
@@ -661,6 +662,9 @@ async function handleProcessShiur(request, sendResponse) {
             } else if (sitePrefix === 'kolhalashon') {
                 // Kol Halashon pattern: /playShiur/123456
                 const match = pageUrl.match(/\/playShiur\/(\d+)/);
+                if (match) pageId = match[1];
+            } else if (sitePrefix === 'shiurbank' && !pageId) {
+                const match = pageUrl.match(/\/shiur\/([\w-]+)/i);
                 if (match) pageId = match[1];
             }
 
@@ -736,6 +740,7 @@ async function handleProcessShiur(request, sendResponse) {
         // Cache the result with extended metadata from page
         const storageMetadata = {
             title: pageTitle,
+            sourceUrl: pageUrl,
             categories: metadata?.categories,
             references: metadata?.references,
             venue: metadata?.venue,

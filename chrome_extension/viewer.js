@@ -48,6 +48,7 @@ function parseCacheKey(cacheKey) {
     const isUpload = cacheKey.startsWith('upload_');
     const isKolHalashon = cacheKey.startsWith('kolhalashon_');
     const isYuTorah = cacheKey.startsWith('yutorah_');
+    const isShiurBank = cacheKey.startsWith('shiurbank_');
 
     let url, type, lectureId;
 
@@ -63,6 +64,11 @@ function parseCacheKey(cacheKey) {
     } else if (isYuTorah) {
         lectureId = parts[1];
         url = `https://www.yutorah.org/lectures/${lectureId}`;
+    } else if (isShiurBank) {
+        lectureId = parts[1];
+        // The exact ShiurBank route includes teacher and series ids, so use the
+        // saved source URL when available rather than constructing a guess.
+        url = '';
     } else {
         url = '';
     }
@@ -81,7 +87,8 @@ async function loadSingleNoteByKey(cacheKey) {
     currentCacheKey = cacheKey;
 
     try {
-        const { url, type } = parseCacheKey(cacheKey);
+        const parsed = parseCacheKey(cacheKey);
+        const type = parsed.type;
 
         // Get cached note and full metadata
         const content = await Storage.getCachedNotes(cacheKey);
@@ -91,6 +98,7 @@ async function loadSingleNoteByKey(cacheKey) {
         
         const allNotes = await Storage.getAllNotes();
         const noteData = allNotes[cacheKey] || {};
+        const url = noteData.sourceUrl || parsed.url;
         const modelUsed = noteData.modelUsed;
 
         // Display the note
@@ -421,7 +429,6 @@ async function loadAllNotes() {
  */
 function createNoteCard(cacheKey, data) {
     const parsed = parseCacheKey(cacheKey);
-    const url = parsed.url;
     const type = parsed.type;
     const parts = cacheKey.split('_');
     const isUpload = parsed.isUpload;
@@ -432,6 +439,8 @@ function createNoteCard(cacheKey, data) {
         title = data.title || filename;
     } else if (parsed.lectureId && cacheKey.startsWith('kolhalashon_')) {
         title = data.title || `קול הלשון ${parsed.lectureId}`;
+    } else if (cacheKey.startsWith('shiurbank_') && parsed.lectureId) {
+        title = data.title || `ShiurBank shiur ${parsed.lectureId}`;
     } else if (parsed.lectureId) {
         title = data.title || `Lecture ${parsed.lectureId}`;
     } else {
@@ -634,7 +643,8 @@ async function getTitle(cacheKey) {
  */
 function extractTitleFromUrl(url) {
     const match = url.match(/\/lectures\/(\d+)/);
-    return match ? `Lecture-${match[1]}` : 'Shiur';
+    if (match) return `Lecture-${match[1]}`;
+    return url.includes('shiurbank.org') ? 'ShiurBank shiur' : 'Shiur';
 }
 
 /**

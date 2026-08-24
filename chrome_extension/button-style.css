@@ -85,3 +85,46 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(129, 212, 250, 0.4);
 }
+
+/* ShiurBank has a sticky site header; keep the extension controls below it. */
+#yutorah-transcribe-container.shiurbank-actions {
+    top: 84px;
+}
+
+#shiur-ai-page-notice {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 10001;
+    max-width: min(380px, calc(100vw - 40px));
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: #1e3a5f;
+    color: #fff;
+    font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#shiur-ai-page-notice.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+    #yutorah-transcribe-container.shiurbank-actions {
+        top: auto;
+        right: 12px;
+        bottom: 16px;
+    }
+
+    #yutorah-transcribe-container.shiurbank-actions .yutorah-action-btn {
+        width: auto;
+        min-width: 0;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+}
