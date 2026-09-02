@@ -1,0 +1,38 @@
+name: Web Worker Check
+
+on:
+  push:
+    branches: [app]
+    paths:
+      - "web-worker/**"
+      - "web-mvp/**"
+      - ".github/workflows/web-worker-check.yml"
+  pull_request:
+    paths:
+      - "web-worker/**"
+      - "web-mvp/**"
+      - ".github/workflows/web-worker-check.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-worker
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web-worker/package.json
+
+      - name: Install Wrangler
+        run: npm install
+
+      - name: Validate Worker bundle
+        run: npm run check

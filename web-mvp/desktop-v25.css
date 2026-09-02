@@ -1,0 +1,264 @@
+@media (min-width: 900px) {
+  html {
+    min-height: 100%;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(102, 126, 234, .12), transparent 34rem),
+      radial-gradient(circle at 88% 8%, rgba(118, 75, 162, .10), transparent 32rem),
+      var(--bg-light);
+  }
+
+  body {
+    min-height: 100vh;
+    background: transparent;
+  }
+
+  .app-shell {
+    width: min(1180px, calc(100% - 48px));
+    max-width: 1180px;
+    min-height: calc(100vh - 32px);
+    margin: 16px auto;
+    padding-bottom: 0;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: 0 24px 70px rgba(20, 24, 35, .15);
+  }
+
+  .topbar {
+    position: relative;
+    top: auto;
+    grid-template-columns: 140px 1fr 140px;
+    min-height: 82px;
+    padding: 17px 28px;
+    border-radius: 0;
+  }
+
+  .brand-lockup {
+    justify-content: center;
+  }
+
+  .brand-lockup p {
+    font-size: 10px;
+    letter-spacing: .18em;
+  }
+
+  .brand-lockup h1 {
+    font-size: 22px;
+  }
+
+  .nav-button,
+  .topbar .text-button {
+    font-size: 14px;
+  }
+
+  #topAction:not(.hidden) {
+    justify-self: end;
+    width: auto;
+    min-width: 78px;
+    padding: 10px 18px;
+    border: 1px solid rgba(255,255,255,.42);
+    border-radius: 999px;
+    text-align: center;
+  }
+
+  .tabbar {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 28px;
+    border-top: 0;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--surface);
+    backdrop-filter: none;
+  }
+
+  .tab {
+    position: relative;
+    min-width: 120px;
+    padding: 15px 24px 16px;
+    font-size: 14px;
+    border-radius: 0;
+  }
+
+  .tab::after {
+    content: "";
+    position: absolute;
+    right: 24px;
+    bottom: -1px;
+    left: 24px;
+    height: 3px;
+    border-radius: 999px 999px 0 0;
+    background: transparent;
+  }
+
+  .tab.active::after {
+    background: var(--primary-color);
+  }
+
+  .screen {
+    padding: 38px 44px 52px;
+  }
+
+  #app > .screen {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  #app > .screen:has(.hero) {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(330px, .75fr);
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  #app > .screen:has(.hero) > .hero {
+    min-height: 330px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px;
+    border-radius: 16px;
+  }
+
+  .hero h2 {
+    max-width: 650px;
+    margin-top: 14px;
+    font-size: clamp(42px, 4.4vw, 60px);
+    line-height: 1.02;
+    letter-spacing: -.045em;
+  }
+
+  .hero p:not(.kicker) {
+    max-width: 620px;
+    font-size: 17px;
+  }
+
+  .hero .primary-button {
+    min-width: 170px;
+    align-self: flex-start;
+    padding: 14px 22px;
+  }
+
+  #app > .screen:has(.hero) > .home-shortcut-card {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 330px;
+    padding: 30px;
+    border-radius: 16px;
+  }
+
+  .home-shortcut-copy h2 {
+    font-size: 25px;
+  }
+
+  .home-shortcut-card .shortcut-install-button {
+    margin-top: 20px;
+  }
+
+  .home-shortcut-card .shortcut-steps {
+    margin-top: 18px;
+  }
+
+  #app > .screen:has(.hero) > .section-heading,
+  #app > .screen:has(.hero) > .note-list {
+    grid-column: 1 / -1;
+  }
+
+  #app > .screen:has(.hero) > .section-heading {
+    margin-top: 18px;
+  }
+
+  .note-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .note-card {
+    min-height: 94px;
+    padding: 18px;
+  }
+
+  .settings-group,
+  .reader-header,
+  .document,
+  .progress-card,
+  .panel {
+    max-width: 860px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .reader-header h2 {
+    font-size: 38px;
+  }
+
+  .document {
+    padding: 44px 52px;
+    font-size: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+  }
+
+  .sheet {
+    width: min(620px, calc(100% - 48px));
+    max-width: 620px;
+    margin: auto;
+    overflow: visible;
+  }
+
+  .sheet::backdrop {
+    background: rgba(10, 14, 24, .58);
+    backdrop-filter: blur(5px);
+  }
+
+  .sheet-card,
+  #addDialog .sheet-card,
+  #keyDialog .sheet-card {
+    max-height: min(82vh, 760px);
+    padding: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    box-shadow: 0 26px 80px rgba(0, 0, 0, .28);
+  }
+
+  .sheet-head {
+    margin-bottom: 24px;
+  }
+
+  .sheet-head h2 {
+    font-size: 30px;
+  }
+
+  .text-input,
+  .search-input,
+  select,
+  textarea {
+    min-height: 52px;
+  }
+
+  .choice-button {
+    padding: 17px;
+  }
+
+  .empty-state {
+    grid-column: 1 / -1;
+    min-height: 180px;
+    display: grid;
+    place-content: center;
+  }
+}
+
+@media (min-width: 1250px) {
+  .app-shell {
+    width: min(1220px, calc(100% - 72px));
+    max-width: 1220px;
+  }
+}

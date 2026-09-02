@@ -1,0 +1,5 @@
+/* UI cleanup v29 */
+/* Remove the decorative Hebrew source seal from the New Shiur confirmation UI. */
+.source-seal {
+  display: none !important;
+}

@@ -1,0 +1,45 @@
+name: Web MVP Check
+
+on:
+  pull_request:
+    paths:
+      - "web-mvp/**"
+      - ".github/workflows/web-mvp-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check web-mvp/app.js
+          node --check web-mvp/home-shortcut-v23.js
+          node --check web-mvp/state-bridge.js
+          node --check web-mvp/link-resolver.js
+          node --check web-mvp/production-api.js
+          node --check web-mvp/share-intake.js
+          node --check web-mvp/ui-polish-v20.js
+          node --check web-mvp/export-tools.js
+          node --check web-mvp/pdf-export-v18.js
+          node --check web-mvp/service-worker.js
+
+      - name: Verify required files
+        run: |
+          test -f web-mvp/index.html
+          test -f web-mvp/styles.css
+          test -f web-mvp/extension-theme.css
+          test -f web-mvp/desktop-v25.css
+          test -f web-mvp/home-shortcut-v23.js
+          test -f web-mvp/state-bridge.js
+          test -f web-mvp/share-intake.js
+          test -f web-mvp/ui-polish-v20.js
+          test -f web-mvp/export-tools.js
+          test -f web-mvp/pdf-export-v18.js
+          test -f web-mvp/manifest.webmanifest

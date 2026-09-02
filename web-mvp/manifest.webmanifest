@@ -1,0 +1,28 @@
+{
+  "name": "Shiur Notes",
+  "short_name": "Shiur Notes",
+  "description": "Turn Torah audio into organized notes, transcripts, and maamarim.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#202124",
+  "theme_color": "#667eea",
+  "share_target": {
+    "action": "./share-target",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

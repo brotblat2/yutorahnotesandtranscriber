@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#667eea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Shiur Notes">
+  <meta name="description" content="Turn Torah audio into organized notes, transcripts, and maamarim.">
+  <link rel="canonical" href="https://shiurnotes.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Shiur Notes">
+  <meta property="og:title" content="Shiur Notes">
+  <meta property="og:description" content="Turn Torah audio into organized notes, transcripts, and maamarim.">
+  <meta property="og:url" content="https://shiurnotes.com/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Shiur Notes">
+  <meta name="twitter:description" content="Turn Torah audio into organized notes, transcripts, and maamarim.">
+  <title>Shiur Notes</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./extension-theme.css">
+  <link rel="stylesheet" href="./desktop-v25.css?v=25">
+  <link rel="stylesheet" href="./ui-cleanup-v29.css?v=29">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="nav-button hidden" id="backButton" aria-label="Go back">Back</button>
+      <div class="brand-lockup">
+        <div><p>SHIUR NOTES</p><h1 id="screenTitle">Home</h1></div>
+      </div>
+      <button class="nav-button" id="topAction">Add</button>
+    </header>
+    <main id="app" aria-live="polite"></main>
+    <nav class="tabbar" id="tabbar" aria-label="Primary navigation">
+      <button class="tab active" data-tab="home"><span>Home</span></button>
+      <button class="tab" data-tab="library"><span>Library</span></button>
+      <button class="tab" data-tab="settings"><span>Settings</span></button>
+    </nav>
+  </div>
+
+  <dialog id="addDialog" class="sheet">
+    <form method="dialog" class="sheet-card" id="addForm">
+      <div class="sheet-head">
+        <div><p class="kicker">NEW SHIUR</p><h2>Choose a source</h2></div>
+        <button class="close-button" value="cancel" aria-label="Close">Close</button>
+      </div>
+      <label class="field-label" for="shiurUrl">Paste a YUTorah, Kol Halashon, or direct audio link</label>
+      <input id="shiurUrl" class="text-input" type="url" inputmode="url" autocomplete="url" placeholder="Paste a link">
+      <button type="button" class="primary-button" id="continueLink">Continue with link</button>
+      <div class="divider"><span>or import audio</span></div>
+      <button type="button" class="choice-button" id="importAudio">
+        <span><strong>Import an audio file</strong><small>MP3, M4A, WAV, or another supported format</small></span>
+      </button>
+      <input id="audioFile" type="file" accept="audio/*" hidden>
+      <button type="button" class="choice-button" id="pasteClipboard">
+        <span><strong>Paste from clipboard</strong><small>Use the link currently copied on your device</small></span>
+      </button>
+    </form>
+  </dialog>
+
+  <dialog id="keyDialog" class="sheet">
+    <form method="dialog" class="sheet-card" id="keyForm">
+      <div class="sheet-head">
+        <div><p class="kicker">GEMINI</p><h2>Personal API key</h2></div>
+        <button class="close-button" value="cancel">Close</button>
+      </div>
+
+      <section class="notice" style="text-align:left; line-height:1.55;">
+        <strong style="display:block; font-size:1.05em; margin-bottom:8px;">Don't have a Gemini API key?</strong>
+        <p style="margin:0 0 12px;">It takes about a minute. Follow these steps:</p>
+        <ol style="margin:0; padding-left:22px;">
+          <li style="margin-bottom:10px;"><strong>Open Google AI Studio:</strong> <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer"><strong>Get a Gemini API key here ↗</strong></a></li>
+          <li style="margin-bottom:10px;"><strong>Sign in</strong> with your Google account. On the API Keys page, click <strong>Create API key</strong>. If Google asks for a project, create or select one.</li>
+          <li style="margin-bottom:10px;"><strong>Copy the key</strong> Google generates. It will usually start with <strong>AIza</strong>.</li>
+          <li><strong>Come back here</strong>, paste the key into the box below, and click <strong>Save key</strong>.</li>
+        </ol>
+        <p style="margin:14px 0 0;"><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer"><strong>Need help? Open Google's official API-key instructions ↗</strong></a></p>
+      </section>
+
+      <p class="notice" style="margin-top:12px;">Your key stays in this browser. Shiur Notes sends it only with your generation request and does not save it on the server.</p>
+      <label class="field-label" for="apiKeyInput">Paste your Gemini API key</label>
+      <input id="apiKeyInput" class="text-input" type="password" autocomplete="off" placeholder="AIza…">
+      <button type="button" class="primary-button" id="saveApiKey">Save key</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./gemini-compat-v26.js?v=26"></script>
+  <script src="./app.js" defer></script>
+  <script src="./home-shortcut-v23.js?v=24" defer></script>
+  <script src="./state-bridge.js" defer></script>
+  <script src="./link-resolver.js" defer></script>
+  <script src="./production-api.js" defer></script>
+  <script src="./share-intake.js?v=24" defer></script>
+  <script src="./ui-polish-v20.js?v=22" defer></script>
+  <script src="./export-tools.js" defer></script>
+  <script src="./pdf-export-v18.js?v=18" defer></script>
+</body>
+</html>
