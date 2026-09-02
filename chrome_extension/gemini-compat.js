@@ -10,10 +10,14 @@
         ['gemini-3-flash-preview', 'gemini-3.6-flash']
     ]);
 
-    function normalizeGeminiUrl(value) {
+    function isGeminiGenerationUrl(value) {
         const url = String(value || '');
-        if (!url.includes('generativelanguage.googleapis.com') || !url.includes(':generateContent')) return url;
-        let normalized = url;
+        return url.includes('generativelanguage.googleapis.com') && url.includes(':generateContent');
+    }
+
+    function normalizeGeminiUrl(value) {
+        let normalized = String(value || '');
+        if (!isGeminiGenerationUrl(normalized)) return normalized;
         for (const [oldModel, newModel] of MODEL_REPLACEMENTS) {
             normalized = normalized.replace(`/models/${oldModel}:generateContent`, `/models/${newModel}:generateContent`);
         }
@@ -41,11 +45,9 @@
 
     globalThis.fetch = function shiurNotesCompatibleFetch(input, init = {}) {
         const originalUrl = typeof input === 'string' ? input : input?.url;
-        const normalizedUrl = normalizeGeminiUrl(originalUrl);
-        if (normalizedUrl === originalUrl || !normalizedUrl.includes(':generateContent')) {
-            return nativeFetch(input, init);
-        }
+        if (!isGeminiGenerationUrl(originalUrl)) return nativeFetch(input, init);
 
+        const normalizedUrl = normalizeGeminiUrl(originalUrl);
         const nextInit = { ...init, body: normalizeBody(init?.body) };
         if (typeof input === 'string') return nativeFetch(normalizedUrl, nextInit);
 
