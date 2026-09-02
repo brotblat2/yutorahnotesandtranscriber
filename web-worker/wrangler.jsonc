@@ -11,7 +11,8 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "ALLOWED_ORIGIN": "https://shiurnotes.com"
+    "ALLOWED_ORIGIN": "https://shiurnotes.com",
+    "DEPLOY_REV": "v28-api-key-guide"
   },
   "observability": {
     "enabled": true
