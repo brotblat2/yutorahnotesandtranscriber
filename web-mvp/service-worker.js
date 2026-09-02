@@ -1,4 +1,4 @@
-const CACHE_NAME = "shiur-notes-web-v27";
+const CACHE_NAME = "shiur-notes-web-v28";
 const ASSETS = ["./", "./index.html", "./styles.css", "./extension-theme.css", "./desktop-v25.css?v=25", "./gemini-compat-v26.js?v=26", "./app.js", "./home-shortcut-v23.js?v=24", "./state-bridge.js", "./link-resolver.js", "./production-api.js", "./share-intake.js?v=24", "./ui-polish-v20.js?v=22", "./export-tools.js", "./pdf-export-v18.js?v=18", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", event => {
