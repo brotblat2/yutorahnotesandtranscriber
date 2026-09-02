@@ -46,11 +46,9 @@
         <div><p class="kicker">NEW SHIUR</p><h2>Choose a source</h2></div>
         <button class="close-button" value="cancel" aria-label="Close">Close</button>
       </div>
-
       <label class="field-label" for="shiurUrl">Paste a YUTorah, Kol Halashon, or direct audio link</label>
       <input id="shiurUrl" class="text-input" type="url" inputmode="url" autocomplete="url" placeholder="Paste a link">
       <button type="button" class="primary-button" id="continueLink">Continue with link</button>
-
       <div class="divider"><span>or import audio</span></div>
       <button type="button" class="choice-button" id="importAudio">
         <span><strong>Import an audio file</strong><small>MP3, M4A, WAV, or another supported format</small></span>
@@ -76,6 +74,7 @@
   </dialog>
 
   <div class="toast" id="toast" role="status"></div>
+  <script src="./gemini-compat-v26.js?v=26"></script>
   <script src="./app.js" defer></script>
   <script src="./home-shortcut-v23.js?v=24" defer></script>
   <script src="./state-bridge.js" defer></script>
