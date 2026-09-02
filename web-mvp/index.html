@@ -67,18 +67,19 @@
         <button class="close-button" value="cancel">Close</button>
       </div>
 
-      <div class="notice" style="text-align:left; line-height:1.55;">
-        <strong>How to get a Gemini API key</strong>
-        <ol style="margin:10px 0 0; padding-left:22px;">
-          <li style="margin-bottom:8px;"><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer"><strong>Open Google AI Studio's API Keys page</strong></a> and sign in with your Google account.</li>
-          <li style="margin-bottom:8px;">If Google already shows you an API key, copy it. If not, click <strong>Create API key</strong>. Google will either use/create a project for you or ask you which project to use.</li>
-          <li style="margin-bottom:8px;">Copy the key Google gives you. It will usually begin with <strong>AIza</strong>.</li>
-          <li>Return to Shiur Notes, paste the key into the box below, and press <strong>Save key</strong>.</li>
+      <section class="notice" style="text-align:left; line-height:1.55;">
+        <strong style="display:block; font-size:1.05em; margin-bottom:8px;">Don't have a Gemini API key?</strong>
+        <p style="margin:0 0 12px;">It takes about a minute. Follow these steps:</p>
+        <ol style="margin:0; padding-left:22px;">
+          <li style="margin-bottom:10px;"><strong>Open Google AI Studio:</strong> <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer"><strong>Get a Gemini API key here ↗</strong></a></li>
+          <li style="margin-bottom:10px;"><strong>Sign in</strong> with your Google account. On the API Keys page, click <strong>Create API key</strong>. If Google asks for a project, create or select one.</li>
+          <li style="margin-bottom:10px;"><strong>Copy the key</strong> Google generates. It will usually start with <strong>AIza</strong>.</li>
+          <li><strong>Come back here</strong>, paste the key into the box below, and click <strong>Save key</strong>.</li>
         </ol>
-        <p style="margin:12px 0 0;"><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">Google's official step-by-step API key documentation ↗</a></p>
-      </div>
+        <p style="margin:14px 0 0;"><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer"><strong>Need help? Open Google's official API-key instructions ↗</strong></a></p>
+      </section>
 
-      <p class="notice" style="margin-top:12px;">Your key is stored only in this browser. It is sent to the Shiur Notes server only when you generate something and is not saved on the server.</p>
+      <p class="notice" style="margin-top:12px;">Your key stays in this browser. Shiur Notes sends it only with your generation request and does not save it on the server.</p>
       <label class="field-label" for="apiKeyInput">Paste your Gemini API key</label>
       <input id="apiKeyInput" class="text-input" type="password" autocomplete="off" placeholder="AIza…">
       <button type="button" class="primary-button" id="saveApiKey">Save key</button>
