@@ -447,11 +447,17 @@ function createNoteCard(cacheKey, data) {
         title = data.title || cacheKey;
     }
 
+    title = String(title).replace(/\s*[-–—|]\s*Back to series\s*$/i, '').trim();
+
     const preview = data.content.substring(0, 200).replace(/[#*>\\-]/g, '').trim();
     const date = data.timestamp ? formatDate(data.timestamp) : 'Unknown date';
 
-    // Append speaker name to title if available
-    const displayTitle = data.speaker ? `${title} - ${data.speaker}` : title;
+    // Append a real speaker name, but never the ShiurBank navigation label
+    // that older extension versions accidentally stored as speaker metadata.
+    const speaker = String(data.speaker || '').trim();
+    const displayTitle = speaker && !/^Back to series$/i.test(speaker)
+        ? `${title} - ${speaker}`
+        : title;
 
     // Add source badge for uploaded files
     const sourceBadge = isUpload ? '<span class="badge upload">📤 Uploaded</span>' : '';

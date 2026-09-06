@@ -16,144 +16,115 @@
         </header>
 
         <main>
-            <!-- API Key Section -->
-            <section class="card">
-                <div class="api-key-heading">
-                    <h2>🔑 API Key Configuration</h2>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Get a free Gemini API key</a>
-                </div>
-
-                <div class="info-box warning">
-                    <p><strong>💡 Recommended: Use Your Own API Key</strong></p>
-                    <p>An API key is a private, password-like code from Google that lets this extension use Gemini on
-                        your behalf. It is <strong>not</strong> your Google password.</p>
-                    <p>For the best experience with unlimited requests and full privacy, we strongly recommend using
-                        your own free Gemini API key.</p>
-                    <p>The default mode is provided for <strong>demo and basic use only</strong> (3 requests/day
-                        limit).</p>
-                </div>
-
-                <!-- Key Mode Selection -->
-                <div class="form-group">
-                    <label style="font-weight: bold; margin-bottom: 12px; display: block;">Choose API Key Mode:</label>
-
-                    <!-- Default Mode Option -->
-                    <div class="radio-option">
-                        <input type="radio" id="modeDefault" name="keyMode" value="default">
-                        <label for="modeDefault">
-                            <strong>🎯 Default Keys (Demo Mode)</strong>
-                            <br>
-                            <small>Shared keys with 3 requests per day limit - for trying out the extension</small>
-                        </label>
+            <section class="card setup-card" id="api-key-settings" aria-labelledby="api-setup-title">
+                <div class="setup-eyebrow">START HERE</div>
+                <div class="setup-header">
+                    <div>
+                        <h2 id="api-setup-title">Connect the extension to Gemini</h2>
+                        <p>Follow these three steps once. After that, notes and transcripts are ready to use.</p>
                     </div>
+                    <div class="setup-private-badge">🔒 Key stored only in this browser</div>
+                </div>
 
-                    <!-- Usage Stats (shown when default mode is active) -->
-                    <div id="usageStats" class="usage-stats" style="display: none;">
-                        <div class="usage-bar-container">
-                            <div class="usage-bar" id="usageBar"></div>
+                <div class="setup-account-warning">
+                    <strong>Use a personal Gmail account.</strong> School and work accounts often block API-key
+                    creation. Your API key is not your Google password.
+                </div>
+
+                <div class="setup-flow">
+                    <section class="setup-block" aria-labelledby="setup-create-key">
+                        <div class="setup-block-heading">
+                            <span class="setup-step-number" aria-hidden="true">1</span>
+                            <div>
+                                <h3 id="setup-create-key">Create your free API key</h3>
+                                <p>This opens Google's official Gemini API-key page in a new tab.</p>
+                            </div>
                         </div>
-                        <div class="usage-text">
-                            <span id="usageText">0 / 3 requests used today</span>
-                            <span id="resetText">Resets at midnight</span>
+                        <a class="setup-primary-action" href="https://aistudio.google.com/app/apikey"
+                            target="_blank" rel="noopener noreferrer">Open Google AI Studio ↗</a>
+                        <ol class="setup-google-steps">
+                            <li>Click <strong>Create API key</strong>.</li>
+                            <li>If asked, choose <strong>Create API key in new project</strong>.</li>
+                            <li>Click <strong>Copy</strong> next to the key, then return to this page.</li>
+                        </ol>
+                    </section>
+
+                    <section class="setup-block" aria-labelledby="setup-choose-mode">
+                        <div class="setup-block-heading">
+                            <span class="setup-step-number" aria-hidden="true">2</span>
+                            <div>
+                                <h3 id="setup-choose-mode">Choose how to connect</h3>
+                                <p>Your own key is recommended and uses your personal Google allowance.</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Custom Mode Option -->
-                    <div class="radio-option">
-                        <input type="radio" id="modeCustom" name="keyMode" value="custom">
-                        <label for="modeCustom">
-                            <strong>⭐ My Own API Key (Recommended)</strong>
-                            <br>
-                            <small>Unlimited requests, full privacy, and better performance</small>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Custom API Key Input (shown when custom mode is selected) -->
-                <div id="customKeySection" style="display: none;">
-                    <div class="info-box">
-                        <p><strong>🔒 What happens when you add a key:</strong></p>
-                        <p>Your API key is stored <strong>locally in your browser only</strong>. The extension developer
-                            has <strong>NO ACCESS</strong> to your key. The key is used only to send your requests
-                            directly to Google's Gemini service.</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="apiKey">Paste your Gemini API key:</label>
-                        <div class="input-group">
-                            <input type="password" id="apiKey" placeholder="Enter your Gemini API key"
-                                autocomplete="off">
-                            <button id="toggleApiKey" class="btn-secondary" title="Show/Hide API Key">👁️</button>
+                        <div class="mode-options">
+                            <div class="radio-option">
+                                <input type="radio" id="modeCustom" name="keyMode" value="custom">
+                                <label for="modeCustom">
+                                    <strong>⭐ My Own API Key <span class="recommended-tag">Recommended</span></strong>
+                                    <small>Best reliability and your personal Google free-tier allowance</small>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="modeDefault" name="keyMode" value="default">
+                                <label for="modeDefault">
+                                    <strong>🎯 Shared Demo Keys</strong>
+                                    <small>Try the extension without a key — limited to 3 requests per day</small>
+                                </label>
+                            </div>
                         </div>
-                        <small>Paste the long code Google gives you here — not your Google password. Get a free key
-                            from <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</small>
-                    </div>
 
-                    <div class="button-group">
-                        <button id="saveApiKey" class="btn-primary">Save API Key</button>
-                        <button id="testApiKey" class="btn-secondary">Test Connection</button>
-                        <button id="clearApiKey" class="btn-danger">Clear API Key</button>
-                    </div>
+                        <div id="usageStats" class="usage-stats" style="display: none;">
+                            <div class="usage-bar-container">
+                                <div class="usage-bar" id="usageBar"></div>
+                            </div>
+                            <div class="usage-text">
+                                <span id="usageText">0 / 3 requests used today</span>
+                                <span id="resetText">Resets at midnight</span>
+                            </div>
+                        </div>
 
-                    <div id="apiKeyStatus" class="status-message"></div>
-                </div>
+                        <div class="button-group setup-mode-actions" id="saveModeSection">
+                            <button id="saveMode" class="btn-secondary">Use Shared Demo Mode</button>
+                        </div>
+                        <div id="modeStatus" class="status-message"></div>
+                    </section>
 
-                <!-- Save Mode Button -->
-                <div class="button-group" style="margin-top: 16px;">
-                    <button id="saveMode" class="btn-primary">Save Mode Selection</button>
-                </div>
-                <div id="modeStatus" class="status-message"></div>
-            </section>
+                    <section id="customKeySection" class="setup-block setup-key-block" style="display: none;"
+                        aria-labelledby="setup-paste-key">
+                        <div class="setup-block-heading">
+                            <span class="setup-step-number" aria-hidden="true">3</span>
+                            <div>
+                                <h3 id="setup-paste-key">Paste and verify your key</h3>
+                                <p>Paste the long code you copied from Google. It usually starts with
+                                    <strong>AIza</strong>.</p>
+                            </div>
+                        </div>
 
-            <!-- How to Get API Key Section -->
-            <section class="card">
-                <h2>📖 What Is an API Key, and How Do I Get One?</h2>
+                        <div class="form-group setup-key-input">
+                            <label for="apiKey">Gemini API key</label>
+                            <div class="input-group">
+                                <input type="password" id="apiKey" placeholder="Paste your API key here"
+                                    autocomplete="off" spellcheck="false">
+                                <button id="toggleApiKey" class="btn-secondary key-visibility-button"
+                                    title="Show or hide API key" aria-label="Show or hide API key">👁️</button>
+                            </div>
+                            <small>Never paste your Google password here.</small>
+                        </div>
 
-                <div class="info-box">
-                    <p><strong>Think of an API key as a private access pass.</strong></p>
-                    <p>It tells Google that the request is yours, so Gemini can create notes and transcripts for you.
-                        You only need to create it once, then paste it into the box above.</p>
-                </div>
+                        <div class="button-group">
+                            <button id="saveApiKey" class="btn-primary">Save &amp; Verify API Key</button>
+                            <button id="testApiKey" class="btn-secondary">Test Again</button>
+                            <button id="clearApiKey" class="btn-danger">Clear Key</button>
+                        </div>
+                        <div id="apiKeyStatus" class="status-message"></div>
 
-                <div class="info-box warning">
-                    <p><strong>⚠️ IMPORTANT - Do NOT Use School/Institutional Email:</strong></p>
-                    <ul>
-                        <li><strong>Use a personal Gmail account</strong> (not your school or work email)</li>
-                        <li>Institutional accounts often have restrictions that prevent API key creation</li>
-                        <li>If you don't have a personal Gmail, create a free one at <a
-                                href="https://accounts.google.com/signup" target="_blank">gmail.com</a></li>
-                    </ul>
-                </div>
-
-                <ol class="instructions">
-                    <li><strong>Sign in with a PERSONAL Google account</strong> (not school/work email)</li>
-                    <li>Open <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
-                    <li>Click <strong>"Create API Key"</strong></li>
-                    <li>Select <strong>"Create API key in new project"</strong> (recommended for first-time users)</li>
-                    <li>When the long code appears, click <strong>"Copy"</strong></li>
-                    <li>Return here, paste the code in the field above, and click <strong>"Save API Key"</strong></li>
-                    <li>Click <strong>"Test Connection"</strong>. A success message means you are ready.</li>
-                </ol>
-
-                <div class="info-box">
-                    <p><strong>💡 Tips:</strong></p>
-                    <ul>
-                        <li>The Gemini API has a generous free tier - perfect for personal use</li>
-                        <li>Keep your API key private - don't share it with anyone</li>
-                        <li>If you lose your key, you can always create a new one</li>
-                    </ul>
-                </div>
-
-                <div class="info-box warning">
-                    <p><strong>🔒 Privacy Notice:</strong></p>
-                    <ul>
-                        <li>Your API key is stored locally in your browser's extension storage</li>
-                        <li>The extension developer (the person who created this extension) has <strong>NO
-                                ACCESS</strong> to your API key</li>
-                        <li>Audio files are sent directly from your browser to Google's Gemini API</li>
-                        <li>No data passes through any third-party servers</li>
-                        <li>All notes are stored locally in your browser</li>
-                    </ul>
+                        <div class="setup-privacy-note">
+                            <strong>Private by design:</strong> your key is stored locally and sent only to Google's
+                            Gemini API. The extension developer cannot see it.
+                        </div>
+                    </section>
                 </div>
             </section>
 
@@ -228,7 +199,7 @@
             <!-- About Section -->
             <section class="card">
                 <h2>ℹ️ About</h2>
-                <p><strong>Shiur AI Assistant</strong> v2.0.0</p>
+                <p><strong>Shiur AI Assistant</strong> v<span id="extensionVersion"></span></p>
                 <p>Generate AI-powered notes and transcripts from YUTorah shiurim with one click.</p>
                 <p>This extension is completely private - all processing happens between your browser and Google's
                     Gemini API.</p>

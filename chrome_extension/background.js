@@ -640,6 +640,9 @@ async function handleProcessShiur(request, sendResponse) {
             try {
                 const hostname = new URL(url).hostname;
                 if (hostname.includes('yutorah.org')) return 'yutorah';
+                // Keep notes made in the alternate YUTorah player together
+                // with the same lecture on the canonical YUTorah site.
+                if (hostname === 'yutorah-player.mrosensweig.workers.dev') return 'yutorah';
                 if (hostname.includes('kolhalashon.com')) return 'kolhalashon';
                 if (hostname.includes('shiurbank.org')) return 'shiurbank';
                 return 'unknown';

@@ -1,5 +1,5 @@
 // Gemini API client for YUTorah Notes Extension
-// Refactored for Gemini 2.5 Flash and production robustness
+// Uses the current stable Gemini Flash family with ordered fallbacks.
 
 /**
  * Default prompts extracted to keep logic clean.
@@ -186,6 +186,23 @@ function addNoChartsInstruction(prompt) {
     return `${String(prompt || '').trim()}${NO_CHARTS_INSTRUCTION}`;
 }
 
+// Keep routing in one place so every generation path uses the same quality
+// order. Stable models are preferred over preview aliases to avoid unexpected
+// shutdowns. All entries support text, uploaded audio, and PDF input.
+const GEMINI_FLASH_MODEL_ROUTE = Object.freeze([
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-2.5-flash'
+]);
+
+function getGeminiModelRoute(allowFallbackModels = true) {
+    return allowFallbackModels === false
+        ? [GEMINI_FLASH_MODEL_ROUTE[0]]
+        : [...GEMINI_FLASH_MODEL_ROUTE];
+}
+
 // Gemini API Client
 const GeminiAPI = {
     BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
@@ -286,9 +303,7 @@ const GeminiAPI = {
      * Generate content strictly from text input (no file upload)
      */
     async generateContentFromText(apiKey, textInput, requestType = 'enhance_transcript', customPrompts = null, options = {}) {
-        // Use flash model for text tasks for speed
-        const availableModels = ["gemini-3.6-flash", "gemini-3-flash-preview", "gemini-2.5-flash"];
-        const models = options.allowFallbackModels === false ? [availableModels[0]] : availableModels;
+        const models = getGeminiModelRoute(options.allowFallbackModels);
         let lastError = null;
 
         for (let i = 0; i < models.length; i++) {
@@ -383,7 +398,13 @@ const GeminiAPI = {
 
                 if (error?.code === 'BULK_STOPPED') throw error;
                 const errorMessage = String(error?.message || error).toLowerCase();
-                if (/429|resource_exhausted|rate.?limit|quota|failed to fetch|network|401|403|permission_denied|unauthenticated/.test(errorMessage)) {
+                // Authentication and network failures affect the whole key or
+                // request, so changing models cannot fix them. Model-specific
+                // quota/rate errors may be recovered by the next fallback.
+                if (/failed to fetch|network|401|403|permission_denied|unauthenticated/.test(errorMessage)) {
+                    throw error;
+                }
+                if (/429|resource_exhausted|rate.?limit|quota/.test(errorMessage) && options.allowFallbackModels === false) {
                     throw error;
                 }
 
@@ -402,9 +423,7 @@ const GeminiAPI = {
      * Generate transcript or notes
      */
     async generateContent(apiKey, fileUri, requestType = 'notes', customPrompts = null, mimeType = 'audio/mpeg', options = {}) {
-        // Use different model order based on request type
-        const availableModels = ["gemini-3.6-flash", "gemini-3-flash-preview", "gemini-2.5-flash"];
-        const models = options.allowFallbackModels === false ? [availableModels[0]] : availableModels;
+        const models = getGeminiModelRoute(options.allowFallbackModels);
         let lastError = null;
 
         for (let i = 0; i < models.length; i++) {
@@ -502,7 +521,13 @@ const GeminiAPI = {
 
                 if (error?.code === 'BULK_STOPPED') throw error;
                 const errorMessage = String(error?.message || error).toLowerCase();
-                if (/429|resource_exhausted|rate.?limit|quota|failed to fetch|network|401|403|permission_denied|unauthenticated/.test(errorMessage)) {
+                // Authentication and network failures affect the whole key or
+                // request, so changing models cannot fix them. Model-specific
+                // quota/rate errors may be recovered by the next fallback.
+                if (/failed to fetch|network|401|403|permission_denied|unauthenticated/.test(errorMessage)) {
+                    throw error;
+                }
+                if (/429|resource_exhausted|rate.?limit|quota/.test(errorMessage) && options.allowFallbackModels === false) {
                     throw error;
                 }
 
