@@ -130,7 +130,11 @@ try {
     await visit('bulk-monitor.html?empty');await ready('!!document.querySelector(".empty-state")');await clean('empty queue');
     await visit('sidebar.html',460,900);await run('initSidebar({type:"transcript",url:"https://www.yutorah.org/lectures/102"});showResults({content:__data.yutorah_102_transcript});');await screenshot('sidebar');await clean('sidebar results');
     await visit('injected.html');await ready('document.querySelectorAll(".yutorah-action-btn").length === 3');await screenshot('injected-controls');await clean('injected buttons and bulk panel styling');
-    await visit('popup.html',440,600);await screenshot('popup');assert.equal(await run('document.querySelector(".popup-tip")'),null,'Learning online tip removed');assert.equal(await run('document.querySelector(".web-action").href'),'https://shiurnotes.com/');await click('#viewNotes');assert.equal(await run('__openedUrl'),'http://127.0.0.1:8765/viewer.html');assert.equal(await run('document.documentElement.scrollHeight <= 600'),true,'Popup fits Chrome height');await clean('popup navigation and website link');
+    // Chrome initially probes extension popups at its 25px minimum. The popup
+    // must retain an intrinsic width during that probe or it opens as a thin,
+    // scrollbar-only strip.
+    await visit('popup.html',25,600);assert.equal(await run('document.documentElement.getBoundingClientRect().width'),440,'Popup keeps its intrinsic width during Chrome sizing');
+    await visit('popup.html',440,600);await screenshot('popup');assert.equal(await run('document.querySelector(".popup-tip")'),null,'Learning online tip removed');assert.equal(await run('document.querySelector(".web-action").href'),'https://shiurnotes.com/');await click('#viewNotes');assert.equal(await run('__openedUrl'),'http://127.0.0.1:8765/viewer.html');assert.equal(await run('document.documentElement.scrollHeight <= 600'),true,'Popup fits Chrome height');await clean('popup sizing, navigation and website link');
     for (const page of ['viewer.html','upload.html','options.html','bulk-monitor.html']) {await visit(page,390,844);await screenshot('mobile-'+page.split('.')[0]);await clean(page+' at 390px');}
     console.log('All UI smoke checks passed. Screenshots: .preview/');
 } finally {
