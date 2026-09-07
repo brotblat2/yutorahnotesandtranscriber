@@ -12,7 +12,7 @@
   },
   "vars": {
     "ALLOWED_ORIGIN": "https://shiurnotes.com",
-    "DEPLOY_REV": "v28-api-key-guide"
+    "DEPLOY_REV": "v30-shiurnotes-redesign"
   },
   "observability": {
     "enabled": true
