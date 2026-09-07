@@ -3,32 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#667eea">
+  <meta name="theme-color" content="#285847">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Shiur Notes">
-  <meta name="description" content="Turn Torah audio into organized notes, transcripts, and maamarim.">
+  <meta name="apple-mobile-web-app-title" content="ShiurNotes">
+  <meta name="description" content="Thoughtful notes, transcripts, and maamarim from the shiurim you want to remember.">
   <link rel="canonical" href="https://shiurnotes.com/">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Shiur Notes">
-  <meta property="og:title" content="Shiur Notes">
-  <meta property="og:description" content="Turn Torah audio into organized notes, transcripts, and maamarim.">
+  <meta property="og:site_name" content="ShiurNotes">
+  <meta property="og:title" content="ShiurNotes — From listening to understanding">
+  <meta property="og:description" content="Thoughtful notes, transcripts, and maamarim from the shiurim you want to remember.">
   <meta property="og:url" content="https://shiurnotes.com/">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Shiur Notes">
-  <meta name="twitter:description" content="Turn Torah audio into organized notes, transcripts, and maamarim.">
-  <title>Shiur Notes</title>
+  <meta property="og:image" content="https://shiurnotes.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ShiurNotes — From listening to understanding">
+  <meta name="twitter:description" content="Thoughtful notes, transcripts, and maamarim from the shiurim you want to remember.">
+  <meta name="twitter:image" content="https://shiurnotes.com/og.png">
+  <title>ShiurNotes — From listening to understanding</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./extension-theme.css">
   <link rel="stylesheet" href="./desktop-v25.css?v=25">
   <link rel="stylesheet" href="./ui-cleanup-v29.css?v=29">
+  <link rel="stylesheet" href="./shiurnotes-v30.css?v=30">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <button class="nav-button hidden" id="backButton" aria-label="Go back">Back</button>
       <div class="brand-lockup">
+        <img class="brand-icon" src="./icon.svg" alt="">
         <div><p>SHIUR NOTES</p><h1 id="screenTitle">Home</h1></div>
       </div>
       <button class="nav-button" id="topAction">Add</button>
@@ -39,6 +43,13 @@
       <button class="tab" data-tab="library"><span>Library</span></button>
       <button class="tab" data-tab="settings"><span>Settings</span></button>
     </nav>
+    <footer class="site-footer">
+      <div>
+        <p>SHIUR AI FOR CHROME</p>
+        <strong>Use the companion extension while you browse.</strong>
+      </div>
+      <a href="https://chromewebstore.google.com/detail/shiur-ai-assistant/nfkenagfgiiobeaadckifeljnndjpbdl" target="_blank" rel="noopener noreferrer">Open Chrome Web Store <span aria-hidden="true">↗</span></a>
+    </footer>
   </div>
 
   <dialog id="addDialog" class="sheet">
