@@ -6,24 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shiur AI Assistant - Settings</title>
     <link rel="stylesheet" href="options.css">
+    <link rel="stylesheet" href="design-system.css">
 </head>
 
-<body>
+<body data-page="options">
     <div class="container">
-        <header>
-            <h1>⚙️ Shiur AI Assistant Settings</h1>
-            <p class="subtitle">Configure your extension to generate AI-powered notes from YUTorah shiurim</p>
-        </header>
+        <header><div class="header-content"><h1>Your learning workspace <span class="breadcrumb-detail">/ Settings</span></h1><a href="viewer.html" class="nav-help">Back to library →</a></div></header>
 
-        <main>
+        <main><section class="page-intro"><div class="eyebrow">A WORKSPACE THAT WORKS FOR YOU</div><h2>Settle into your own rhythm.</h2><p>Connect Gemini, shape your notes, and keep your library organized.</p></section>
             <section class="card setup-card" id="api-key-settings" aria-labelledby="api-setup-title">
-                <div class="setup-eyebrow">START HERE</div>
+                <div class="setup-eyebrow">01 / CONNECTION</div>
                 <div class="setup-header">
                     <div>
                         <h2 id="api-setup-title">Connect the extension to Gemini</h2>
                         <p>Follow these three steps once. After that, notes and transcripts are ready to use.</p>
                     </div>
-                    <div class="setup-private-badge">🔒 Key stored only in this browser</div>
+                    <div class="setup-private-badge"> Key stored only in this browser</div>
                 </div>
 
                 <div class="setup-account-warning">
@@ -36,7 +34,7 @@
                         <div class="setup-block-heading">
                             <span class="setup-step-number" aria-hidden="true">1</span>
                             <div>
-                                <h3 id="setup-create-key">Create your free API key</h3>
+                                <h3 id="setup-create-key">Create your API key</h3>
                                 <p>This opens Google's official Gemini API-key page in a new tab.</p>
                             </div>
                         </div>
@@ -69,7 +67,7 @@
                             <div class="radio-option">
                                 <input type="radio" id="modeDefault" name="keyMode" value="default">
                                 <label for="modeDefault">
-                                    <strong>🎯 Shared Demo Keys</strong>
+                                    <strong> Shared Demo Keys</strong>
                                     <small>Try the extension without a key — limited to 3 requests per day</small>
                                 </label>
                             </div>
@@ -88,7 +86,7 @@
                         <div class="button-group setup-mode-actions" id="saveModeSection">
                             <button id="saveMode" class="btn-secondary">Use Shared Demo Mode</button>
                         </div>
-                        <div id="modeStatus" class="status-message"></div>
+                        <div id="modeStatus" class="status-message" role="status"></div>
                     </section>
 
                     <section id="customKeySection" class="setup-block setup-key-block" style="display: none;"
@@ -108,7 +106,7 @@
                                 <input type="password" id="apiKey" placeholder="Paste your API key here"
                                     autocomplete="off" spellcheck="false">
                                 <button id="toggleApiKey" class="btn-secondary key-visibility-button"
-                                    title="Show or hide API key" aria-label="Show or hide API key">👁️</button>
+                                    title="Show or hide API key" aria-label="Show or hide API key">Show</button>
                             </div>
                             <small>Never paste your Google password here.</small>
                         </div>
@@ -118,7 +116,7 @@
                             <button id="testApiKey" class="btn-secondary">Test Again</button>
                             <button id="clearApiKey" class="btn-danger">Clear Key</button>
                         </div>
-                        <div id="apiKeyStatus" class="status-message"></div>
+                        <div id="apiKeyStatus" class="status-message" role="status"></div>
 
                         <div class="setup-privacy-note">
                             <strong>Private by design:</strong> your key is stored locally and sent only to Google's
@@ -128,18 +126,18 @@
                 </div>
             </section>
 
-            <!-- Custom Prompts Section -->
+            <!--Make the notes your own Section -->
             <section class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h2 style="margin: 0;">✏️ Custom Prompts</h2>
-                    <button id="togglePrompts" class="btn-secondary" style="font-size: 0.9rem;">
-                        🔧 Advanced Options (Optional)
+                    <h2 style="margin: 0;">Make the notes your own</h2>
+                    <button id="togglePrompts" class="btn-secondary" aria-expanded="false" aria-controls="promptsSection" style="font-size: 0.9rem;">
+                        Customize prompts
                     </button>
                 </div>
 
                 <div id="promptsSection" style="display: none;">
                     <div class="info-box">
-                        <p><strong>ℹ️ Most users don't need this!</strong></p>
+                        <p><strong>ℹ Most users don't need this!</strong></p>
                         <p>The extension works great with the default prompts. Only customize if you want to change how
                             notes or transcripts are generated.</p>
                     </div>
@@ -164,13 +162,13 @@
                         <button id="resetPrompts" class="btn-secondary">Reset to Default</button>
                     </div>
 
-                    <div id="promptStatus" class="status-message"></div>
+                    <div id="promptStatus" class="status-message" role="status"></div>
                 </div>
             </section>
 
-            <!-- Storage Management Section -->
+            <!--Your library & storage Section -->
             <section class="card">
-                <h2>💾 Storage Management</h2>
+                <h2>Your library & storage</h2>
                 <div class="stats-grid">
                     <div class="stat-item">
                         <div class="stat-label">Cached Notes</div>
@@ -198,7 +196,7 @@
 
             <!-- About Section -->
             <section class="card">
-                <h2>ℹ️ About</h2>
+                <h2>ℹAbout this companion</h2>
                 <p><strong>Shiur AI Assistant</strong> v<span id="extensionVersion"></span></p>
                 <p>Generate AI-powered notes and transcripts from YUTorah shiurim with one click.</p>
                 <p>This extension is completely private - all processing happens between your browser and Google's
@@ -213,6 +211,7 @@
 
     <script src="storage.js"></script>
     <script src="options.js"></script>
+    <script src="app-shell.js"></script>
 </body>
 
 </html>

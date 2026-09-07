@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Shiur AI Assistant",
   "description": "Generate AI-powered notes and transcripts from YUTorah shiurim with one click - completely private and local",
-  "version": "5.1.6",
+  "version": "6.1.6",
   "permissions": [
     "storage",
     "alarms"
@@ -52,7 +52,10 @@
         "storage.js",
         "upload.html",
         "upload.js",
-        "upload.css"
+        "upload.css",
+        "sidebar.css",
+        "design-system.css",
+        "app-shell.js"
       ],
       "matches": [
         "*://*.yutorah.org/*",

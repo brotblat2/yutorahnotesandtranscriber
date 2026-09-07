@@ -103,15 +103,15 @@ script.onload = function () {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            width: min(400px, 100vw) !important;
+            width: min(460px, 100vw) !important;
             max-width: 100vw !important;
             height: 100vh !important;
             height: 100dvh !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
-            border-left: 2px solid rgba(102, 126, 234, 0.3) !important;
-            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2) !important;
+            border-left: 1px solid #d6dfcb !important;
+            box-shadow: -8px 0 35px rgba(35, 53, 29, 0.12) !important;
             z-index: 2147483647 !important;
             pointer-events: auto !important;
             transform: translateX(100%) !important;
@@ -790,25 +790,21 @@ script.onload = function () {
         }
     }
 
-    // Summarize Button Icon (Notes)
+    // Summary: a short note with a sparkle, rather than an audio microphone.
     const summarizeIcon = `
-        <path d="M8 1C6.34 1 5 2.34 5 4V8C5 9.66 6.34 11 8 11C9.66 11 11 9.66 11 8V4C11 2.34 9.66 1 8 1Z" fill="currentColor"/>
-        <path d="M3 8C3 8.55 3.45 9 4 9C4.55 9 5 8.55 5 8H3ZM11 8C11 8.55 11.45 9 12 9C12.55 9 13 8.55 13 8H11ZM8 13C5.24 13 3 10.76 3 8H5C5 9.66 6.34 11 8 11C9.66 11 11 9.66 11 8H13C13 10.76 10.76 13 8 13Z" fill="currentColor"/>
-        <path d="M7 13H9V15H7V13Z" fill="currentColor"/>
+        <path d="M2.5 2.5h7v11h-7v-11Zm1.5 2v1h4v-1H4Zm0 3v1h4v-1H4Zm0 3v1h2.7v-1H4Z" fill="currentColor"/>
+        <path d="m12.5 1 .55 1.95L15 3.5l-1.95.55L12.5 6l-.55-1.95L10 3.5l1.95-.55L12.5 1Z" fill="currentColor"/>
     `;
 
-    // Transcribe Button Icon (Text/Document)
+    // Transcript: spoken words becoming readable text.
     const transcribeIcon = `
-        <path d="M4 2C3.45 2 3 2.45 3 3V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V3C13 2.45 12.55 2 12 2H4ZM4 3H12V13H4V3Z" fill="currentColor"/>
-        <path d="M5 5H11V6H5V5Z" fill="currentColor"/>
-        <path d="M5 7H11V8H5V7Z" fill="currentColor"/>
-        <path d="M5 9H9V10H5V9Z" fill="currentColor"/>
+        <path d="M2 5h1.5v6H2V5Zm2.5-2h1.5v10H4.5V3ZM7 1h1.5v14H7V1Zm2.5 3H11v8H9.5V4Zm2.5-2h1.5v12H12V2Z" fill="currentColor"/>
+        <path d="M14.5 5h1.5v8h-1.5V5Z" fill="currentColor"/>
     `;
 
-    // Hebrew Article Button Icon (Document with Hebrew א)
+    // Hebrew article: an open book, which avoids an out-of-context Latin "A".
     const maamarIcon = `
-        <path d="M4 2C3.45 2 3 2.45 3 3V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V3C13 2.45 12.55 2 12 2H4ZM4 3H12V13H4V3Z" fill="currentColor"/>
-        <path d="M8 5.5L6.5 10H7.2L7.5 9H8.5L8.8 10H9.5L8 5.5ZM7.75 8.5L8 7.5L8.25 8.5H7.75Z" fill="currentColor"/>
+        <path d="M8 3C5.7 1.5 3.1 1.9 1.5 2.8v10.5c2-1 4.3-.8 6.5.7 2.2-1.5 4.5-1.7 6.5-.7V2.8C12.9 1.9 10.3 1.5 8 3Zm-5 2c1.3-.5 2.6-.4 4 .3v6.8c-1.35-.65-2.7-.8-4-.4V5Zm10 6.7c-1.3-.4-2.65-.25-4 .4V5.3c1.4-.7 2.7-.8 4-.3v6.7Z" fill="currentColor"/>
     `;
 
     const summarizeBtn = createButton('Summarize Shiur', 'notes', summarizeIcon, 'yutorah-summarize-btn');

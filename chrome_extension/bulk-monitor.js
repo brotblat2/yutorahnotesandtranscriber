@@ -40,7 +40,7 @@
             <span class="summary-pill paused"><strong>${paused}</strong> Paused</span>
             <span class="summary-pill complete"><strong>${completeJobs}</strong> Complete</span>`;
         if (!jobs.length) {
-            jobsElement.innerHTML = '<div class="empty-state">Start a bulk queue from a YUTorah search page. It will appear here automatically.</div>';
+            jobsElement.innerHTML = '<div class="empty-state"><h3>A little space before the next shiur.</h3><p>Start a bulk queue from a YUTorah search page.<br>Your progress will appear here automatically.</p><a class="button-link btn-secondary" href="viewer.html">Return to your library →</a></div>';
             return;
         }
         jobsElement.innerHTML = jobs.map(job => {

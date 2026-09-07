@@ -53,7 +53,7 @@ function initSidebar(data) {
     currentTitle = data.title || '';
     const badge = document.getElementById('typeBadge');
     if (badge) {
-        badge.textContent = data.type === 'transcript' ? 'Transcript' : 'Notes';
+        badge.textContent = ({ transcript: 'Transcript', maamar: 'Hebrew article', enhanced: 'Enhanced transcript' })[data.type] || 'Notes';
         console.log('Badge updated');
     } else {
         console.error('typeBadge element not found');
@@ -432,7 +432,7 @@ function setTextProcessingState(isProcessing, type = '') {
 
     if (enhanceBtn) {
         enhanceBtn.disabled = isProcessing;
-        enhanceBtn.textContent = isProcessing && type === 'enhance_transcript' ? 'Enhancing…' : '🪄 Enhance';
+        enhanceBtn.textContent = isProcessing && type === 'enhance_transcript' ? 'Enhancing…' : 'Enhance';
     }
     if (translateSelect) translateSelect.disabled = isProcessing;
     if (overwriteCheck) overwriteCheck.disabled = isProcessing;

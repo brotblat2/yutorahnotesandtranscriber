@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Queue Monitor - Shiur AI Assistant</title>
+    <title>Processing queue - Shiur AI Assistant</title>
     <link rel="stylesheet" href="bulk-monitor.css">
+    <link rel="stylesheet" href="design-system.css">
 </head>
-<body>
+<body data-page="queue">
     <main class="monitor-shell">
         <header class="monitor-header">
             <div>
-                <p class="monitor-kicker">Shiur AI Assistant</p>
-                <h1>Bulk Queue Monitor</h1>
-                <p class="monitor-subtitle">View and manage all queues running in the background.</p>
+                <p class="monitor-kicker">KEEP THE LEARNING GOING</p>
+                <h1>Processing queue</h1>
+                <p class="monitor-subtitle">Your shiurim are becoming notes. Follow their progress here.</p>
             </div>
             <button id="refresh" class="monitor-button" type="button">Refresh</button>
         </header>
@@ -20,5 +21,6 @@
         <section id="jobs" class="job-grid" aria-live="polite"></section>
     </main>
     <script src="bulk-monitor.js"></script>
+    <script src="app-shell.js"></script>
 </body>
 </html>

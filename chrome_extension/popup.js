@@ -29,13 +29,20 @@ async function checkApiKeyStatus() {
 
     // We need to access storage. Since we are in a popup, we can use chrome.storage directly
     // or use the Storage helper if we import it. Let's use chrome.storage direct for simplicity here.
-    chrome.storage.local.get(['gemini_api_key'], (result) => {
-        if (result.gemini_api_key) {
+    chrome.storage.local.get(['gemini_api_key', 'api_key_mode'], (result) => {
+        const statusText = document.getElementById('statusText');
+        if (result.gemini_api_key && result.api_key_mode === 'custom') {
             statusDot.classList.add('active');
             statusDot.title = "API Key Configured";
+            statusText.textContent = 'Personal key ready';
+        } else if (!result.api_key_mode || result.api_key_mode === 'default') {
+            statusDot.classList.add('active');
+            statusDot.title = 'Using shared demo keys';
+            statusText.textContent = 'Shared demo mode';
         } else {
             statusDot.classList.add('inactive');
             statusDot.title = "API Key Missing";
+            statusText.textContent = 'Connect in Settings';
         }
     });
 }

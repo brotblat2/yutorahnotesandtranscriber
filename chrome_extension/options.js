@@ -156,10 +156,12 @@ function toggleApiKeyVisibility() {
 
     if (input.type === 'password') {
         input.type = 'text';
-        button.textContent = '🙈';
+        button.textContent = 'Hide';
+        button.setAttribute('aria-label', 'Hide API key');
     } else {
         input.type = 'password';
-        button.textContent = '👁️';
+        button.textContent = 'Show';
+        button.setAttribute('aria-label', 'Show API key');
     }
 }
 
@@ -333,10 +335,12 @@ function togglePromptsSection() {
 
     if (section.style.display === 'none') {
         section.style.display = 'block';
-        button.textContent = '🔼 Hide Advanced Options';
+        button.textContent = 'Hide custom prompts';
+        button.setAttribute('aria-expanded', 'true');
     } else {
         section.style.display = 'none';
-        button.textContent = '🔧 Advanced Options (Optional)';
+        button.textContent = 'Customize prompts';
+        button.setAttribute('aria-expanded', 'false');
     }
 }
 

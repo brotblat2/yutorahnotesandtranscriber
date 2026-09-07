@@ -4,19 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shiur AI Assistant Viewer</title>
+    <title>Library · Shiur AI</title>
     <link rel="stylesheet" href="viewer.css">
+    <link rel="stylesheet" href="design-system.css">
 </head>
 
-<body>
+<body data-page="viewer">
     <div class="container">
         <header>
             <div class="header-content">
-                <h1>📝 Shiur AI Assistant</h1>
+                <h1>Your learning workspace <span class="breadcrumb-detail">/ Library</span></h1>
                 <div class="header-actions">
-                    <button id="uploadBtn" class="btn-secondary">📤 Upload File</button>
-                    <button id="backBtn" class="btn-secondary">← Back</button>
-                    <button id="settingsBtn" class="btn-secondary">⚙️ Settings</button>
+                    <button id="uploadBtn" class="btn-secondary">+ New notes</button>
+                    <button id="backBtn" class="btn-secondary">← Library</button>
+                    <button id="settingsBtn" class="btn-secondary"> Settings</button>
                 </div>
             </div>
         </header>
@@ -40,10 +41,10 @@
 
                     </div>
                     <div class="note-actions">
-                        <button id="copyBtn" class="btn-secondary">📋 Copy</button>
-                        <button id="downloadDocxBtn" class="btn-primary">💾 Download DOCX</button>
-                        <button id="downloadPdfBtn" class="btn-secondary">📄 Save as PDF</button>
-                        <button id="deleteBtn" class="btn-danger">🗑️ Delete</button>
+                        <button id="copyBtn" class="btn-secondary"> Copy</button>
+                        <button id="downloadDocxBtn" class="btn-primary"> Download DOCX</button>
+                        <button id="downloadPdfBtn" class="btn-secondary"> Save as PDF</button>
+                        <button id="deleteBtn" class="btn-danger"> Delete</button>
                     </div>
                 </div>
 
@@ -51,10 +52,10 @@
                     <div class="ai-tools-label">AI refinements</div>
                     <button id="enhanceViewBtn" class="btn-secondary btn-small"
                         title="Clean paragraph structure and remove filler words">Enhance</button>
-                    <select id="translateViewSelect" class="custom-select">
-                        <option value="">🌐 Translate...</option>
-                        <option value="translate_english_hebrew">🇺🇸 English</option>
-                        <option value="translate_beis_medrash">🇮🇱 Hebrew</option>
+                    <select id="translateViewSelect" aria-label="Translate note" class="custom-select">
+                        <option value=""> Translate...</option>
+                        <option value="translate_english_hebrew"> English</option>
+                        <option value="translate_beis_medrash"> Hebrew</option>
                     </select>
                     <label class="checkbox-label" title="Replace the current note instead of saving a separate copy">
                         <input type="checkbox" id="overwriteViewCheck">
@@ -67,7 +68,7 @@
 
                 <div class="warning-banner" id="viewModelWarningBanner"
                     style="display: none; background-color: #E9D502; color: #202124; padding: 10px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; font-size: 0.9rem;">
-                    ⚠️ Non-ideal AI model was used due to rate limits. Re-processing later may yield better results.
+                     Non-ideal AI model was used due to rate limits. Re-processing later may yield better results.
                 </div>
 
                 <div id="noteContent" class="note-content"></div>
@@ -75,19 +76,28 @@
 
             <!-- All Notes View -->
             <div id="allNotesView" style="display: none;">
+                <section class="page-intro hero">
+                    <div><div class="eyebrow">LEARN. REFLECT. RETURN.</div><h2>A home for your learning.</h2><p>Every shiur, a new perspective. Keep the ideas that matter<br class="desktop-break"> close at hand, ready for your next review.</p></div>
+                    <div class="hero-art" data-icon="book" aria-hidden="true"></div>
+                </section>
+                <div class="library-stats" aria-label="Library statistics">
+                    <div class="library-stat"><strong id="libraryTotal">0</strong><span>Saved notes</span></div>
+                    <div class="library-stat"><strong id="libraryTranscripts">0</strong><span>Transcripts</span></div>
+                    <div class="library-stat"><strong id="libraryArticles">0</strong><span>Hebrew articles</span></div>
+                </div>
                 <div class="view-header">
-                    <h2>All Saved Notes</h2>
+                    <h2>Your collection</h2>
                     <div class="header-controls">
                         <div class="selection-controls" style="display: none;">
-                            <button id="selectAllBtn" class="btn-secondary">☑️ Select All</button>
-                            <button id="deselectAllBtn" class="btn-secondary">☐ Deselect All</button>
+                            <button id="selectAllBtn" class="btn-secondary"> Select All</button>
+                            <button id="deselectAllBtn" class="btn-secondary"> Deselect All</button>
                         </div>
                         <button id="mergeExportBtn" class="btn-primary" style="display: none;">
-                            📦 Merge & Export (<span id="selectedCount">0</span>)
+                             Merge & Export (<span id="selectedCount">0</span>)
                         </button>
 
                         <div class="search-box">
-                            <input type="text" id="searchInput" placeholder="Search notes...">
+                            <input type="text" id="searchInput" placeholder="Search your notes…" aria-label="Search your notes">
                         </div>
                     </div>
                 </div>
@@ -96,7 +106,7 @@
                 <div id="mergePanelModal" class="modal" style="display: none;">
                     <div class="modal-content merge-panel">
                         <h3>Merge & Export Shiurim</h3>
-                        <p class="merge-instructions">Drag to reorder, then export to Word document</p>
+                        <p class="merge-instructions">Drag or use the arrows to reorder, then export to Word or PDF.</p>
                         <div id="selectedShiurimList" class="selected-shiurim-list"></div>
 
                         <!-- Filename Input -->
@@ -116,17 +126,27 @@
                         </div>
 
                         <div class="modal-actions">
-                            <button id="exportMergedDocxBtn" class="btn-primary">💾 Export DOCX</button>
-                            <button id="exportMergedPdfBtn" class="btn-secondary">📄 Save as PDF</button>
+                            <button id="exportMergedDocxBtn" class="btn-primary"> Export DOCX</button>
+                            <button id="exportMergedPdfBtn" class="btn-secondary"> Save as PDF</button>
                             <button id="cancelMergeBtn" class="btn-secondary">Cancel</button>
                         </div>
                     </div>
                 </div>
 
+                <div class="library-toolbar">
+                    <div class="filter-tabs" role="group" aria-label="Filter by format">
+                        <button class="filter-tab" data-filter="all" aria-pressed="true">Everything</button>
+                        <button class="filter-tab" data-filter="notes" aria-pressed="false">Notes</button>
+                        <button class="filter-tab" data-filter="transcript" aria-pressed="false">Transcripts</button>
+                        <button class="filter-tab" data-filter="maamar" aria-pressed="false">Hebrew articles</button>
+                    </div>
+                    <label class="sort-control" for="sortNotes">Sort by <select id="sortNotes"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title">Title A–Z</option></select></label>
+                </div>
+                <p id="resultsCount" class="results-count" aria-live="polite"></p>
                 <div id="notesList" class="notes-list"></div>
+                <div id="noResults" class="empty-state" hidden><h3>No notes found.</h3><p>Try another search or explore a different format.</p><button id="resetFilters" class="btn-secondary">Clear filters</button></div>
                 <div id="emptyState" class="empty-state" style="display: none;">
-                    <p>No notes saved yet.</p>
-                    <p>Visit a YUTorah shiur page and click "Summarize" or "Transcribe" to get started!</p>
+                    <span class="empty-icon" data-icon="book"></span><h3>Your next insight starts here.</h3><p>Upload a recording or document, or summarize a shiur on<br>YUTorah, Kol Halashon, or ShiurBank.</p><a class="button-link btn-primary" href="upload.html">Create your first notes →</a>
                 </div>
             </div>
         </main>
@@ -135,6 +155,7 @@
     <script src="storage.js"></script>
     <script src="utils.js"></script>
     <script src="viewer.js"></script>
+    <script src="app-shell.js"></script>
 </body>
 
 </html>
