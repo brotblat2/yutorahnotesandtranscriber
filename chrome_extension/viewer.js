@@ -1,6 +1,11 @@
 // Viewer page JavaScript for YUTorah Notes Extension
 
 let currentCacheKey = null;
+let activeFormat = 'all';
+
+function escapeNoteText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Parse URL parameters
@@ -8,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const key = params.get('key');
     const url = params.get('url');
     const type = params.get('type');
+    document.getElementById('backBtn').hidden = !(key || (url && type));
 
     // Event listeners
     document.getElementById('backBtn').addEventListener('click', () => {
@@ -48,6 +54,7 @@ function parseCacheKey(cacheKey) {
     const isUpload = cacheKey.startsWith('upload_');
     const isKolHalashon = cacheKey.startsWith('kolhalashon_');
     const isYuTorah = cacheKey.startsWith('yutorah_');
+    const isShiurBank = cacheKey.startsWith('shiurbank_');
 
     let url, type, lectureId;
 
@@ -63,6 +70,11 @@ function parseCacheKey(cacheKey) {
     } else if (isYuTorah) {
         lectureId = parts[1];
         url = `https://www.yutorah.org/lectures/${lectureId}`;
+    } else if (isShiurBank) {
+        lectureId = parts[1];
+        // The exact ShiurBank route includes teacher and series ids, so use the
+        // saved source URL when available rather than constructing a guess.
+        url = '';
     } else {
         url = '';
     }
@@ -81,7 +93,8 @@ async function loadSingleNoteByKey(cacheKey) {
     currentCacheKey = cacheKey;
 
     try {
-        const { url, type } = parseCacheKey(cacheKey);
+        const parsed = parseCacheKey(cacheKey);
+        const type = parsed.type;
 
         // Get cached note and full metadata
         const content = await Storage.getCachedNotes(cacheKey);
@@ -91,6 +104,7 @@ async function loadSingleNoteByKey(cacheKey) {
         
         const allNotes = await Storage.getAllNotes();
         const noteData = allNotes[cacheKey] || {};
+        const url = noteData.sourceUrl || parsed.url;
         const modelUsed = noteData.modelUsed;
 
         // Display the note
@@ -370,6 +384,23 @@ async function loadAllNotes() {
     try {
         const notes = await Storage.getAllNotes();
         const notesArray = Object.entries(notes);
+        document.getElementById('libraryTotal').textContent = notesArray.length;
+        document.getElementById('libraryTranscripts').textContent = notesArray.filter(([key]) => parseCacheKey(key).type === 'transcript').length;
+        document.getElementById('libraryArticles').textContent = notesArray.filter(([key]) => parseCacheKey(key).type === 'maamar').length;
+
+        document.querySelectorAll('[data-filter]').forEach(button => {
+            button.addEventListener('click', () => {
+                activeFormat = button.dataset.filter;
+                document.querySelectorAll('[data-filter]').forEach(tab => tab.setAttribute('aria-pressed', String(tab === button)));
+                filterNotes(document.getElementById('searchInput').value);
+            });
+        });
+        document.getElementById('sortNotes').addEventListener('change', sortLibraryNotes);
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            document.querySelector('[data-filter="all"]').click();
+            document.getElementById('searchInput').focus();
+        });
 
         if (notesArray.length === 0) {
             emptyState.style.display = 'block';
@@ -403,6 +434,8 @@ async function loadAllNotes() {
             setupMergeExport();
         }
 
+        filterNotes('');
+
         loadingState.style.display = 'none';
         allNotesView.style.display = 'block';
     } catch (error) {
@@ -420,8 +453,8 @@ async function loadAllNotes() {
  * Create a note card HTML
  */
 function createNoteCard(cacheKey, data) {
+    const escape = escapeNoteText;
     const parsed = parseCacheKey(cacheKey);
-    const url = parsed.url;
     const type = parsed.type;
     const parts = cacheKey.split('_');
     const isUpload = parsed.isUpload;
@@ -432,20 +465,28 @@ function createNoteCard(cacheKey, data) {
         title = data.title || filename;
     } else if (parsed.lectureId && cacheKey.startsWith('kolhalashon_')) {
         title = data.title || `קול הלשון ${parsed.lectureId}`;
+    } else if (cacheKey.startsWith('shiurbank_') && parsed.lectureId) {
+        title = data.title || `ShiurBank shiur ${parsed.lectureId}`;
     } else if (parsed.lectureId) {
         title = data.title || `Lecture ${parsed.lectureId}`;
     } else {
         title = data.title || cacheKey;
     }
 
-    const preview = data.content.substring(0, 200).replace(/[#*>\\-]/g, '').trim();
+    title = String(title).replace(/\s*[-–—|]\s*Back to series\s*$/i, '').trim();
+
+    const preview = String(data.content || '').substring(0, 200).replace(/[#*>\\-]/g, '').trim();
     const date = data.timestamp ? formatDate(data.timestamp) : 'Unknown date';
 
-    // Append speaker name to title if available
-    const displayTitle = data.speaker ? `${title} - ${data.speaker}` : title;
+    // Append a real speaker name, but never the ShiurBank navigation label
+    // that older extension versions accidentally stored as speaker metadata.
+    const speaker = String(data.speaker || '').trim();
+    const displayTitle = speaker && !/^Back to series$/i.test(speaker)
+        ? `${title} - ${speaker}`
+        : title;
 
     // Add source badge for uploaded files
-    const sourceBadge = isUpload ? '<span class="badge upload">📤 Uploaded</span>' : '';
+    const sourceBadge = isUpload ? '<span class="badge upload">Uploaded</span>' : '';
     
     let typeDisplay = 'Notes';
     if (type === 'transcript') typeDisplay = 'Transcript';
@@ -455,26 +496,26 @@ function createNoteCard(cacheKey, data) {
     else if (type === 'translated_heb') typeDisplay = 'Lashon Kodesh';
 
     return `
-        <div class="note-card" data-key="${cacheKey}" data-title="${title}" data-type="${type}" data-timestamp="${data.timestamp || 0}">
+        <article class="note-card" data-key="${escape(cacheKey)}" data-title="${escape(title)}" data-type="${escape(type)}" data-timestamp="${Number(data.timestamp) || 0}">
             <div class="note-card-select">
-                <input type="checkbox" class="note-select-checkbox" data-key="${cacheKey}">
+                <input type="checkbox" class="note-select-checkbox" data-key="${escape(cacheKey)}" aria-label="Select ${escape(title)}">
             </div>
             <div class="note-card-content">
                 <div class="note-card-header">
-                    <h3 ${getTextDirectionAttrs(displayTitle, data.content)}>${displayTitle}</h3>
+                    <h3 ${getTextDirectionAttrs(displayTitle, data.content)}><a class="note-title-link" href="viewer.html?key=${encodeURIComponent(cacheKey)}">${escape(displayTitle)}</a></h3>
                     ${sourceBadge}
                     <span class="badge ${type}">${typeDisplay}</span>
                 </div>
-                <p class="note-preview" ${getTextDirectionAttrs(preview, data.content)}>${preview}...</p>
+                <p class="note-preview" ${getTextDirectionAttrs(preview, data.content)}>${escape(preview)}${String(data.content || '').length > 200 ? '…' : ''}</p>
                 <div class="note-card-footer">
                     <span class="date">${date}</span>
                     <div class="note-card-actions">
-                        <button class="btn-small btn-view" data-key="${cacheKey}">View</button>
-                        <button class="btn-small btn-danger btn-delete-card" data-key="${cacheKey}">Delete</button>
+                        <button class="btn-small btn-view" data-key="${escape(cacheKey)}">Read note →</button>
+                        <button class="btn-small btn-danger btn-delete-card" data-key="${escape(cacheKey)}" aria-label="Delete ${escape(title)}">Delete</button>
                     </div>
                 </div>
             </div>
-        </div>
+        </article>
     `;
 }
 
@@ -634,7 +675,8 @@ async function getTitle(cacheKey) {
  */
 function extractTitleFromUrl(url) {
     const match = url.match(/\/lectures\/(\d+)/);
-    return match ? `Lecture-${match[1]}` : 'Shiur';
+    if (match) return `Lecture-${match[1]}`;
+    return url.includes('shiurbank.org') ? 'ShiurBank shiur' : 'Shiur';
 }
 
 /**
@@ -862,8 +904,22 @@ function filterNotes(query) {
             matchesTag = cardTags.includes(selectedTag);
         }
 
-        card.style.display = (matchesSearch && matchesTag) ? 'block' : 'none';
+        const matchesFormat = activeFormat === 'all' || card.dataset.type === activeFormat;
+        card.style.display = (matchesSearch && matchesTag && matchesFormat) ? 'flex' : 'none';
     });
+    const visible = [...cards].filter(card => card.style.display !== 'none').length;
+    document.getElementById('resultsCount').textContent = `${visible} ${visible === 1 ? 'note' : 'notes'} in your collection${visible !== cards.length ? ` · ${cards.length} total` : ''}`;
+    document.getElementById('noResults').hidden = !cards.length || visible > 0;
+}
+
+function sortLibraryNotes() {
+    const list = document.getElementById('notesList');
+    const order = document.getElementById('sortNotes').value;
+    const cards = [...list.querySelectorAll('.note-card')];
+    cards.sort((a, b) => order === 'title'
+        ? a.dataset.title.localeCompare(b.dataset.title)
+        : (Number(a.dataset.timestamp) - Number(b.dataset.timestamp)) * (order === 'oldest' ? 1 : -1));
+    list.append(...cards);
 }
 
 /**
@@ -960,18 +1016,32 @@ function setupMergeExport() {
     function renderSelectedShiurim() {
         const items = Array.from(selectedNotes.values());
         selectedShiurimList.innerHTML = items.map((item, index) => `
-            <div class="merge-item" draggable="true" data-index="${index}" data-key="${item.cacheKey}">
+            <div class="merge-item" draggable="true" data-index="${index}" data-key="${escapeNoteText(item.cacheKey)}">
                 <div class="merge-item-drag">⋮⋮</div>
                 <div class="merge-item-content">
-                    <div class="merge-item-title">${item.title}</div>
-                    <span class="badge ${item.type}">${item.type === 'transcript' ? 'Transcript' : 'Notes'}</span>
+                    <div class="merge-item-title">${escapeNoteText(item.title)}</div>
+                    <span class="badge ${escapeNoteText(item.type)}">${item.type === 'transcript' ? 'Transcript' : item.type === 'maamar' ? 'מאמר' : 'Notes'}</span>
                 </div>
                 <div class="merge-item-order">#${index + 1}</div>
+                <div class="merge-reorder"><button class="btn-secondary btn-small" data-move="up" aria-label="Move ${escapeNoteText(item.title)} up">↑</button><button class="btn-secondary btn-small" data-move="down" aria-label="Move ${escapeNoteText(item.title)} down">↓</button></div>
             </div>
         `).join('');
 
         setupDragAndDrop();
     }
+
+    function updateMergeOrder() {
+        selectedShiurimList.querySelectorAll('.merge-item-order').forEach((label, index) => { label.textContent = `#${index + 1}`; });
+    }
+    selectedShiurimList.addEventListener('click', event => {
+        const button = event.target.closest('[data-move]');
+        if (!button) return;
+        const item = button.closest('.merge-item');
+        if (button.dataset.move === 'up' && item.previousElementSibling) item.previousElementSibling.before(item);
+        else if (button.dataset.move === 'down' && item.nextElementSibling) item.nextElementSibling.after(item);
+        updateMergeOrder();
+        button.focus();
+    });
 
     // Setup drag and drop for reordering
     function setupDragAndDrop() {
@@ -990,6 +1060,7 @@ function setupMergeExport() {
             });
 
             item.addEventListener('dragover', (e) => {
+                if (!draggedItem) return;
                 e.preventDefault();
                 const afterElement = getDragAfterElement(selectedShiurimList, e.clientY);
                 if (afterElement == null) {
@@ -997,6 +1068,7 @@ function setupMergeExport() {
                 } else {
                     selectedShiurimList.insertBefore(draggedItem, afterElement);
                 }
+                updateMergeOrder();
             });
         });
     }

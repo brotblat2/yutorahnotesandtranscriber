@@ -17,7 +17,7 @@ const Storage = {
     _dailyUsageQueue: Promise.resolve(),
     /**
      * Generates a cache key from the URL and request type
-     * Format: yutorah_{id}_{type} or upload_{filename}_{type}
+     * Format: yutorah_{id}_{type}, shiurbank_{id}_{type}, or upload_{filename}_{type}
      * Example: yutorah_1154805_notes or upload_myfile_notes
      */
     generateCacheKey(url, requestType = 'notes') {
@@ -33,6 +33,12 @@ const Storage = {
             if (match) {
                 return `kolhalashon_${match[1]}_${requestType}`;
             }
+        }
+
+        // ShiurBank lesson URLs may contain the stable lesson id.
+        if (url.includes('shiurbank.org')) {
+            const match = url.match(/\/shiur\/([\w-]+)/i);
+            if (match) return `shiurbank_${match[1]}_${requestType}`;
         }
 
         // YUTorah file - extract lecture ID
@@ -94,6 +100,9 @@ const Storage = {
             // Store title if provided
             if (metadata.title) {
                 data[`${cacheKey}_title`] = metadata.title;
+            }
+            if (metadata.sourceUrl) {
+                data[`${cacheKey}_sourceUrl`] = metadata.sourceUrl;
             }
 
             // Store extracted metadata fields
@@ -187,10 +196,11 @@ const Storage = {
                     // Filter out non-note items (API key, timestamps, etc.)
                     const notes = {};
                     for (const [key, value] of Object.entries(items)) {
-                        // Include yutorah_, kolhalashon_, and upload_ prefixed items
-                        if ((key.startsWith('yutorah_') || key.startsWith('kolhalashon_') || key.startsWith('upload_')) &&
+                        // Include supported-site and uploaded notes.
+                        if ((key.startsWith('yutorah_') || key.startsWith('kolhalashon_') || key.startsWith('shiurbank_') || key.startsWith('upload_')) &&
                             !key.endsWith('_timestamp') &&
                             !key.endsWith('_title') &&
+                            !key.endsWith('_sourceUrl') &&
                             !key.endsWith('_tags') &&
                             !key.endsWith('_categories') &&
                             !key.endsWith('_references') &&
@@ -203,6 +213,7 @@ const Storage = {
                                 content: value,
                                 timestamp: items[`${key}_timestamp`] || null,
                                 title: items[`${key}_title`] || null,
+                                sourceUrl: items[`${key}_sourceUrl`] || null,
                                 tags: items[`${key}_tags`] || [],
                                 categories: items[`${key}_categories`] || [],
                                 references: items[`${key}_references`] || [],
@@ -229,6 +240,7 @@ const Storage = {
                 cacheKey,
                 `${cacheKey}_timestamp`,
                 `${cacheKey}_title`,
+                `${cacheKey}_sourceUrl`,
                 `${cacheKey}_tags`,
                 `${cacheKey}_categories`,
                 `${cacheKey}_references`,
@@ -313,7 +325,7 @@ const Storage = {
                 } else {
                     chrome.storage.local.get(null, (items) => {
                         const noteCount = Object.keys(items).filter(
-                            key => (key.startsWith('yutorah_') || key.startsWith('kolhalashon_')) && !key.endsWith('_timestamp')
+                            key => (key.startsWith('yutorah_') || key.startsWith('kolhalashon_') || key.startsWith('shiurbank_')) && !key.endsWith('_timestamp')
                         ).length;
 
                         resolve({
@@ -346,7 +358,7 @@ const Storage = {
             const promises = [];
 
             for (const [key, data] of Object.entries(notes)) {
-                if (key.startsWith('yutorah_') || key.startsWith('kolhalashon_')) {
+                if (key.startsWith('yutorah_') || key.startsWith('kolhalashon_') || key.startsWith('shiurbank_')) {
                     promises.push(this.setCachedNotes(key, data.content));
                 }
             }
@@ -365,7 +377,7 @@ const Storage = {
         return new Promise((resolve, reject) => {
             chrome.storage.local.get(null, (items) => {
                 const keysToRemove = Object.keys(items).filter(
-                    key => key.startsWith('yutorah_') || key.startsWith('kolhalashon_')
+                    key => key.startsWith('yutorah_') || key.startsWith('kolhalashon_') || key.startsWith('shiurbank_')
                 );
 
                 chrome.storage.local.remove(keysToRemove, () => {
@@ -403,20 +415,38 @@ const Storage = {
     async setCustomPrompts(notesPrompt, transcriptPrompt) {
         return new Promise((resolve, reject) => {
             const data = {};
-            if (notesPrompt !== null && notesPrompt !== undefined) {
+            const keysToRemove = [];
+
+            if (notesPrompt === null) {
+                keysToRemove.push('custom_notes_prompt');
+            } else if (notesPrompt !== undefined) {
                 data.custom_notes_prompt = notesPrompt;
             }
-            if (transcriptPrompt !== null && transcriptPrompt !== undefined) {
+            if (transcriptPrompt === null) {
+                keysToRemove.push('custom_transcript_prompt');
+            } else if (transcriptPrompt !== undefined) {
                 data.custom_transcript_prompt = transcriptPrompt;
             }
 
-            chrome.storage.local.set(data, () => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    resolve(true);
-                }
-            });
+            const operations = [];
+            if (Object.keys(data).length > 0) {
+                operations.push(new Promise((operationResolve, operationReject) => {
+                    chrome.storage.local.set(data, () => {
+                        if (chrome.runtime.lastError) operationReject(chrome.runtime.lastError);
+                        else operationResolve();
+                    });
+                }));
+            }
+            if (keysToRemove.length > 0) {
+                operations.push(new Promise((operationResolve, operationReject) => {
+                    chrome.storage.local.remove(keysToRemove, () => {
+                        if (chrome.runtime.lastError) operationReject(chrome.runtime.lastError);
+                        else operationResolve();
+                    });
+                }));
+            }
+
+            Promise.all(operations).then(() => resolve(true), reject);
         });
     },
 

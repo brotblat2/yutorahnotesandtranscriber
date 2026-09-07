@@ -1,4 +1,4 @@
-// Content script that adds "Summarize" and "Transcribe" buttons to YUTorah pages
+// Content script that adds AI actions to supported shiur pages
 // and manages the sidebar for displaying progress and results
 
 // Import storage utilities by injecting the script
@@ -13,6 +13,8 @@ script.onload = function () {
     'use strict';
 
     let sidebarIframe = null;
+    let lastSyncedShiurBankMetadata = '';
+    let pageNoticeTimer = null;
 
     // Create the container for buttons
     const container = document.createElement('div');
@@ -30,17 +32,59 @@ script.onload = function () {
             <span class="btn-text">${text}</span>
         `;
         btn.addEventListener('click', function () {
+            if (window.location.hostname.includes('shiurbank.org') && !isShiurBankLessonPage()) {
+                showPageNotice('Open an individual ShiurBank shiur page with an audio player to use this action.');
+                return;
+            }
+            if (isEnhancedYutorahPlayer() && !isEnhancedYutorahPlayerLecture()) {
+                showPageNotice('Notes and transcripts work on individual YUTorah lectures with an audio player. Open a shiur, then try again.');
+                return;
+            }
             handleButtonClick(btn, mode);
         });
         return btn;
     }
 
+    function isShiurBankLessonPage() {
+        return Boolean(document.querySelector('#shiur-player audio, #shiur-player video, audio[data-shiur-id], video[data-shiur-id]'));
+    }
+
+    function isEnhancedYutorahPlayer() {
+        return window.location.hostname === 'yutorah-player.mrosensweig.workers.dev';
+    }
+
+    function isEnhancedYutorahPlayerLecture() {
+        return Boolean(document.querySelector('.player-card audio#audioElement, .player-card audio[src]'));
+    }
+
+    function showPageNotice(message) {
+        let notice = document.getElementById('shiur-ai-page-notice');
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.id = 'shiur-ai-page-notice';
+            notice.setAttribute('role', 'status');
+            notice.setAttribute('aria-live', 'polite');
+            document.body.appendChild(notice);
+        }
+
+        notice.textContent = message;
+        notice.classList.add('visible');
+        clearTimeout(pageNoticeTimer);
+        pageNoticeTimer = setTimeout(() => notice.classList.remove('visible'), 4500);
+    }
+
     // Create and inject sidebar
     function createSidebar() {
-        if (sidebarIframe) {
+        const existingSidebar = document.getElementById('yutorah-notes-sidebar');
+        if (existingSidebar) {
+            sidebarIframe = existingSidebar;
             console.log('Sidebar already exists');
             return;
         }
+
+        // YUTorah can replace page content during navigation. Do not keep a
+        // reference to an iframe that is no longer attached to the document.
+        if (sidebarIframe && !sidebarIframe.isConnected) sidebarIframe = null;
 
         console.log('Creating sidebar iframe');
 
@@ -48,17 +92,30 @@ script.onload = function () {
         sidebarIframe = document.createElement('iframe');
         sidebarIframe.id = 'yutorah-notes-sidebar';
         sidebarIframe.src = chrome.runtime.getURL('sidebar.html');
+        sidebarIframe.title = 'Shiur AI Assistant results';
+        sidebarIframe.setAttribute('aria-label', 'Shiur AI Assistant results');
         sidebarIframe.style.cssText = `
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100vh;
-            border: none;
-            border-left: 2px solid rgba(102, 126, 234, 0.3);
-            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
-            z-index: 999999;
-            transition: right 0.3s ease;
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            left: auto !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: min(460px, 100vw) !important;
+            max-width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            border-left: 1px solid #d6dfcb !important;
+            box-shadow: -8px 0 35px rgba(35, 53, 29, 0.12) !important;
+            z-index: 2147483647 !important;
+            pointer-events: auto !important;
+            transform: translateX(100%) !important;
+            transition: transform 0.3s ease !important;
         `;
         document.body.appendChild(sidebarIframe);
 
@@ -70,15 +127,15 @@ script.onload = function () {
 
     function showSidebar() {
         console.log('Showing sidebar');
-        if (sidebarIframe) {
-            sidebarIframe.style.right = '0';
+        if (sidebarIframe?.isConnected) {
+            sidebarIframe.style.setProperty('transform', 'translateX(0)', 'important');
         }
     }
 
     function hideSidebar() {
         console.log('Hiding sidebar');
-        if (sidebarIframe) {
-            sidebarIframe.style.right = '-400px';
+        if (sidebarIframe?.isConnected) {
+            sidebarIframe.style.setProperty('transform', 'translateX(100%)', 'important');
         }
     }
 
@@ -123,11 +180,113 @@ script.onload = function () {
         try {
             const hostname = new URL(url).hostname;
             if (hostname.includes('yutorah.org')) return 'yutorah';
+            // The Enhanced Player is an alternate frontend for the same
+            // YUTorah lecture catalogue, so it intentionally shares its cache.
+            if (hostname === 'yutorah-player.mrosensweig.workers.dev') return 'yutorah';
             if (hostname.includes('kolhalashon.com')) return 'kolhalashon';
+            if (hostname.includes('shiurbank.org')) return 'shiurbank';
             return 'unknown';
         } catch (e) {
             console.error('Error parsing URL for site prefix:', e);
             return 'unknown';
+        }
+    }
+
+    function getShiurBankId() {
+        const player = document.querySelector('audio[data-shiur-id], video[data-shiur-id], [data-shiur-id]');
+        return player?.getAttribute('data-shiur-id') || null;
+    }
+
+    function getPageId(pageUrl = window.location.href) {
+        const sitePrefix = getSitePrefix(pageUrl);
+        if (sitePrefix === 'yutorah') {
+            return pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/)?.[1]
+                || (isEnhancedYutorahPlayer() ? pageUrl.match(/^https:\/\/yutorah-player\.mrosensweig\.workers\.dev\/(\d+)(?:\/|$|[?#])/)?.[1] : null)
+                || null;
+        }
+        if (sitePrefix === 'kolhalashon') {
+            return pageUrl.match(/\/playShiur\/(\d+)/)?.[1] || null;
+        }
+        if (sitePrefix === 'shiurbank') {
+            return getShiurBankId() || pageUrl.match(/\/shiur\/([\w-]+)/i)?.[1] || null;
+        }
+        return null;
+    }
+
+    function getPageTitle() {
+        if (isEnhancedYutorahPlayer()) {
+            return document.querySelector('#shiurTitle')?.textContent?.trim()
+                || document.querySelector('.shiur-title')?.textContent?.trim()
+                || document.title.trim();
+        }
+
+        const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content')?.trim();
+        const heading = document.querySelector('article h1, main h1, h1')?.textContent?.trim();
+
+        // ShiurBank's og:title is a site/series label, while the lesson's
+        // visible article heading is the authoritative title.
+        if (window.location.hostname.includes('shiurbank.org')) {
+            return (heading || ogTitle || document.title)
+                .replace(/\s*[-–—|]\s*Back to series\s*$/i, '')
+                .trim();
+        }
+
+        return ogTitle || heading || document.title.trim();
+    }
+
+    function getShiurBankTeacherName() {
+        const teacherLinks = [...document.querySelectorAll('article a[href^="/teacher/"]:not([href*="/series/"])')];
+        const namedLink = teacherLinks.find((link) => link.textContent.trim());
+        if (namedLink) return namedLink.textContent.replace(/\s+/g, ' ').trim();
+
+        return document.querySelector('article img[src*="/api/rebbeim/"][alt]')?.getAttribute('alt')?.trim() || null;
+    }
+
+    function getShiurBankSeriesLink() {
+        return [...document.querySelectorAll('article a[href*="/series/"]')]
+            .find((link) => link.textContent.trim() && !/^Back to series$/i.test(link.textContent.trim())) || null;
+    }
+
+    async function syncShiurBankCachedMetadata() {
+        if (!window.location.hostname.includes('shiurbank.org')) return;
+
+        const pageId = getPageId();
+        const title = getPageTitle();
+        const speaker = getShiurBankTeacherName();
+        const syncKey = `${pageId}|${title}|${speaker || ''}`;
+        if (!pageId || !title || syncKey === lastSyncedShiurBankMetadata) return;
+
+        lastSyncedShiurBankMetadata = syncKey;
+        try {
+            const notes = await Storage.getAllNotes();
+            const updates = {};
+            Object.keys(notes)
+                .filter((cacheKey) => cacheKey.startsWith(`shiurbank_${pageId}_`))
+                .forEach((cacheKey) => {
+                    updates[`${cacheKey}_title`] = title;
+                    if (speaker) {
+                        updates[`${cacheKey}_speaker`] = speaker;
+                        updates[`${cacheKey}_tags`] = [...new Set([
+                            ...(notes[cacheKey].tags || []).filter((tag) => !/^Back to series$/i.test(tag)),
+                            speaker
+                        ])];
+                    }
+                });
+
+            if (Object.keys(updates).length > 0) {
+                await new Promise((resolve, reject) => {
+                    chrome.storage.local.set(updates, () => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
+                console.log('Updated cached ShiurBank metadata:', { title, speaker });
+            }
+        } catch (error) {
+            console.warn('Could not update cached ShiurBank title:', error);
         }
     }
 
@@ -140,17 +299,7 @@ script.onload = function () {
 
             // Detect site and generate cache key
             const sitePrefix = getSitePrefix(pageUrl);
-            let lectureId;
-
-            if (sitePrefix === 'yutorah') {
-                // YUTorah pattern: /lectures/123456 or /lecture.cfm/123456
-                const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
-                if (match) lectureId = match[1];
-            } else if (sitePrefix === 'kolhalashon') {
-                // Kol Halashon pattern: /playShiur/123456
-                const match = pageUrl.match(/\/playShiur\/(\d+)/);
-                if (match) lectureId = match[1];
-            }
+            const lectureId = getPageId(pageUrl);
 
             if (!lectureId) {
                 throw new Error('Could not extract lecture ID from URL');
@@ -189,21 +338,8 @@ script.onload = function () {
             // Generate cache key
             let cacheKey;
 
-            // Check for Kol Halashon
-            if (pageUrl.includes('kolhalashon.com')) {
-                const match = pageUrl.match(/\/playShiur\/(\d+)/);
-                if (match) {
-                    cacheKey = `kolhalashon_${match[1]}_${data.type}`;
-                }
-            }
-
-            // Check for YUTorah if not found yet
-            if (!cacheKey) {
-                const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
-                if (match) {
-                    cacheKey = `yutorah_${match[1]}_${data.type}`;
-                }
-            }
+            const pageId = getPageId(pageUrl);
+            if (pageId) cacheKey = `${getSitePrefix(pageUrl)}_${pageId}_${data.type}`;
             
             if (pageUrl.startsWith('upload://')) {
                 cacheKey = pageUrl.replace('upload://', '');
@@ -256,13 +392,8 @@ script.onload = function () {
             let originalKey = data.originalKey;
             const sitePrefix = getSitePrefix(pageUrl);
             
-            if (!originalKey && sitePrefix === 'yutorah') {
-                const match = pageUrl.match(/\/(?:lectures|sidebar\/lecturedata|lecture\.cfm)\/(\d+)/);
-                if (match) originalKey = `${sitePrefix}_${match[1]}_${originalType}`;
-            } else if (!originalKey && sitePrefix === 'kolhalashon') {
-                const match = pageUrl.match(/\/playShiur\/(\d+)/);
-                if (match) originalKey = `${sitePrefix}_${match[1]}_${originalType}`;
-            }
+            const pageId = getPageId(pageUrl);
+            if (!originalKey && pageId) originalKey = `${sitePrefix}_${pageId}_${originalType}`;
             // For uploads
             if (!originalKey && pageUrl.startsWith('upload://')) {
                 originalKey = pageUrl.replace('upload://', '');
@@ -340,14 +471,10 @@ script.onload = function () {
 
             // Initialize sidebar
             setTimeout(() => {
-                // Extract page title
-                const ogTitleMeta = document.querySelector('meta[property="og:title"]');
-                const pageTitle = ogTitleMeta ? ogTitleMeta.getAttribute('content') : '';
-
                 sendToSidebar('INIT', {
                     type: mode,
                     url: window.location.href,
-                    title: pageTitle
+                    title: getPageTitle()
                 });
             }, 500);
         }, 100);
@@ -392,11 +519,11 @@ script.onload = function () {
 
             // Find MP3 URL on the page (this runs in content script, so we have DOM access)
             sendToSidebar('PROGRESS', {
-                message: 'Finding MP3 file...',
+                message: 'Finding audio file...',
                 progress: 20
             });
 
-            console.log('Looking for MP3 URL on page...');
+            console.log('Looking for audio URL on page...');
             let mp3Url = null;
 
             // Strategy 1: Look for links ending in .mp3
@@ -458,7 +585,7 @@ script.onload = function () {
 
             if (!mp3Url) {
                 sendToSidebar('ERROR', {
-                    message: 'Could not find MP3 file on this page. Make sure you are on a shiur page with audio.'
+                    message: 'Could not find an audio file on this page. Make sure you are on a shiur page with audio.'
                 });
                 return;
             }
@@ -477,8 +604,12 @@ script.onload = function () {
 
                 const isKolHalashon = window.location.hostname.includes('kolhalashon.com');
                 const isYuTorah = window.location.hostname.includes('yutorah.org');
+                const isShiurBank = window.location.hostname.includes('shiurbank.org');
+                const isEnhancedPlayer = isEnhancedYutorahPlayer();
 
-                if (isYuTorah) {
+                if (isEnhancedPlayer) {
+                    metadata.speaker = document.querySelector('#shiurSpeaker, .shiur-speaker')?.textContent?.trim() || null;
+                } else if (isYuTorah) {
                     // YUTorah-specific metadata extraction
 
                     // Extract categories from .postedin links
@@ -565,6 +696,22 @@ script.onload = function () {
                     if (speakerElement && !metadata.speaker) {
                         metadata.speaker = speakerElement.textContent.trim();
                     }
+                } else if (isShiurBank) {
+                    const cleanText = (element) => element?.textContent?.replace(/\s+/g, ' ').trim() || '';
+                    const seriesLink = getShiurBankSeriesLink();
+                    const topicLinks = document.querySelectorAll('#shiur-player a[href*="/topic/"], #shiur-player a[href*="/category/"]');
+
+                    metadata.speaker = getShiurBankTeacherName();
+                    if (seriesLink) {
+                        metadata.seriesInfo = {
+                            seriesName: cleanText(seriesLink),
+                            seriesURL: new URL(seriesLink.getAttribute('href'), window.location.href).href
+                        };
+                    }
+                    topicLinks.forEach((link) => {
+                        const topic = cleanText(link);
+                        if (topic && !metadata.categories.includes(topic)) metadata.categories.push(topic);
+                    });
                 }
 
                 console.log('Extracted metadata:', metadata);
@@ -573,13 +720,8 @@ script.onload = function () {
 
             const pageMetadata = extractPageMetadata();
 
-            // Extract page title from og:title meta tag
-            let pageTitle = null;
-            const ogTitleMeta = document.querySelector('meta[property="og:title"]');
-            if (ogTitleMeta) {
-                pageTitle = ogTitleMeta.getAttribute('content');
-                console.log('Page title:', pageTitle);
-            }
+            const pageTitle = getPageTitle();
+            console.log('Page title:', pageTitle);
 
 
             // Update progress
@@ -597,6 +739,7 @@ script.onload = function () {
                         action: 'processShiur',
                         mp3Url: mp3Url,
                         pageUrl: window.location.href,
+                        pageId: getPageId(),
                         pageTitle: pageTitle,
                         metadata: pageMetadata,
                         type: mode
@@ -647,25 +790,21 @@ script.onload = function () {
         }
     }
 
-    // Summarize Button Icon (Notes)
+    // Summary: a short note with a sparkle, rather than an audio microphone.
     const summarizeIcon = `
-        <path d="M8 1C6.34 1 5 2.34 5 4V8C5 9.66 6.34 11 8 11C9.66 11 11 9.66 11 8V4C11 2.34 9.66 1 8 1Z" fill="currentColor"/>
-        <path d="M3 8C3 8.55 3.45 9 4 9C4.55 9 5 8.55 5 8H3ZM11 8C11 8.55 11.45 9 12 9C12.55 9 13 8.55 13 8H11ZM8 13C5.24 13 3 10.76 3 8H5C5 9.66 6.34 11 8 11C9.66 11 11 9.66 11 8H13C13 10.76 10.76 13 8 13Z" fill="currentColor"/>
-        <path d="M7 13H9V15H7V13Z" fill="currentColor"/>
+        <path d="M2.5 2.5h7v11h-7v-11Zm1.5 2v1h4v-1H4Zm0 3v1h4v-1H4Zm0 3v1h2.7v-1H4Z" fill="currentColor"/>
+        <path d="m12.5 1 .55 1.95L15 3.5l-1.95.55L12.5 6l-.55-1.95L10 3.5l1.95-.55L12.5 1Z" fill="currentColor"/>
     `;
 
-    // Transcribe Button Icon (Text/Document)
+    // Transcript: spoken words becoming readable text.
     const transcribeIcon = `
-        <path d="M4 2C3.45 2 3 2.45 3 3V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V3C13 2.45 12.55 2 12 2H4ZM4 3H12V13H4V3Z" fill="currentColor"/>
-        <path d="M5 5H11V6H5V5Z" fill="currentColor"/>
-        <path d="M5 7H11V8H5V7Z" fill="currentColor"/>
-        <path d="M5 9H9V10H5V9Z" fill="currentColor"/>
+        <path d="M2 5h1.5v6H2V5Zm2.5-2h1.5v10H4.5V3ZM7 1h1.5v14H7V1Zm2.5 3H11v8H9.5V4Zm2.5-2h1.5v12H12V2Z" fill="currentColor"/>
+        <path d="M14.5 5h1.5v8h-1.5V5Z" fill="currentColor"/>
     `;
 
-    // Hebrew Article Button Icon (Document with Hebrew א)
+    // Hebrew article: an open book, which avoids an out-of-context Latin "A".
     const maamarIcon = `
-        <path d="M4 2C3.45 2 3 2.45 3 3V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V3C13 2.45 12.55 2 12 2H4ZM4 3H12V13H4V3Z" fill="currentColor"/>
-        <path d="M8 5.5L6.5 10H7.2L7.5 9H8.5L8.8 10H9.5L8 5.5ZM7.75 8.5L8 7.5L8.25 8.5H7.75Z" fill="currentColor"/>
+        <path d="M8 3C5.7 1.5 3.1 1.9 1.5 2.8v10.5c2-1 4.3-.8 6.5.7 2.2-1.5 4.5-1.7 6.5-.7V2.8C12.9 1.9 10.3 1.5 8 3Zm-5 2c1.3-.5 2.6-.4 4 .3v6.8c-1.35-.65-2.7-.8-4-.4V5Zm10 6.7c-1.3-.4-2.65-.25-4 .4V5.3c1.4-.7 2.7-.8 4-.3v6.7Z" fill="currentColor"/>
     `;
 
     const summarizeBtn = createButton('Summarize Shiur', 'notes', summarizeIcon, 'yutorah-summarize-btn');
@@ -679,7 +818,11 @@ script.onload = function () {
 
     // Insert the buttons into the page
     function insertButtons() {
+        const isShiurBank = window.location.hostname.includes('shiurbank.org');
+        const isEnhancedPlayer = isEnhancedYutorahPlayer();
         const possibleParents = [
+            isShiurBank && isShiurBankLessonPage() ? document.querySelector('#shiur-player') : null,
+            isEnhancedPlayer && isEnhancedYutorahPlayerLecture() ? document.querySelector('.player-card') : null,
             document.querySelector('.page-header'),
             document.querySelector('.lecture-header'),
             document.querySelector('header'),
@@ -691,8 +834,20 @@ script.onload = function () {
 
         if (parent) {
             if (!document.getElementById('yutorah-transcribe-container')) {
+                if (isShiurBank) container.classList.add('shiurbank-actions');
+                if (isEnhancedPlayer) container.classList.add('enhanced-player-actions');
                 parent.insertBefore(container, parent.firstChild);
             }
+            if (isEnhancedPlayer) {
+                const canProcessLecture = isEnhancedYutorahPlayerLecture();
+                container.classList.toggle('enhanced-player-no-lecture', !canProcessLecture);
+                container.querySelectorAll('.yutorah-action-btn').forEach((button) => {
+                    button.title = canProcessLecture
+                        ? ''
+                        : 'Open an individual shiur page with audio to use this action.';
+                });
+            }
+            if (isShiurBank && isShiurBankLessonPage()) syncShiurBankCachedMetadata();
         }
     }
 
@@ -701,6 +856,13 @@ script.onload = function () {
         document.addEventListener('DOMContentLoaded', insertButtons);
     } else {
         insertButtons();
+    }
+
+    // ShiurBank is a React single-page app. Watch for its player to mount or
+    // change after navigation so the extension actions remain available.
+    if (window.location.hostname.includes('shiurbank.org') || isEnhancedYutorahPlayer()) {
+        const observer = new MutationObserver(() => insertButtons());
+        observer.observe(document.documentElement, { childList: true, subtree: true });
     }
 
     console.log('YUTorah Notes extension loaded');

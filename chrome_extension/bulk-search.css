@@ -1,11 +1,12 @@
 #yutorah-bulk-launcher {
     position: static;
     z-index: auto;
-    background: linear-gradient(135deg, #ff3b30 0%, #d70015 100%);
+    background: #f1f3eb;
+    color: #586d49;
 }
 
 #yutorah-bulk-launcher:hover {
-    background: linear-gradient(135deg, #e02b23 0%, #b00012 100%);
+    background: #e4eadb;
 }
 
 #yutorah-bulk-panel {
@@ -127,3 +128,26 @@
 @media (max-width: 560px) {
     #yutorah-bulk-panel { width: calc(100vw - 8px); }
 }
+
+/* Shared Shiur AI palette, scoped to the injected panel. */
+#yutorah-bulk-panel { background: #fafaf5; color: #2d382a; border-color: #d9dfd0; box-shadow: 8px 0 35px #253b251f; }
+#yutorah-bulk-panel .ybp-header { background: #edf1e5; color: #344c2d; box-shadow: none; border-bottom: 1px solid #d9e2cd; }
+#yutorah-bulk-panel .ybp-header h2 { color: #344c2d; font: 28px/1.2 Georgia, serif; }
+#yutorah-bulk-panel .ybp-kicker { color: #748266; font-size: 9px; }
+#yutorah-bulk-panel .ybp-close { background: #e1e8d7; color: #5b7150; border: 0; }
+#yutorah-bulk-panel .ybp-section { border-color: #dfe3d7; box-shadow: none; }
+#yutorah-bulk-panel .ybp-section h3 { color: #3d5132; }
+#yutorah-bulk-panel .ybp-btn-primary { background: #285847; color: white; border-color: #285847; box-shadow: none; }
+#yutorah-bulk-panel .ybp-btn-primary:hover { background: #1b4033; }
+#yutorah-bulk-panel .ybp-btn:not(.ybp-btn-primary):hover { background: #eef3e6; border-color: #91a77b; transform: none; }
+#yutorah-bulk-panel .ybp-progress > div { background: #64834d; }
+#yutorah-bulk-panel .ybp-log-section { background: #f0f4e8; border-color: #d8e1cd; }
+#yutorah-bulk-panel .ybp-log-section summary { color: #5b7248; }
+#yutorah-bulk-panel .ybp-status:not(.is-error):not(.is-paused) { background: #edf3e5; color: #526b42; border-color: #8fa779; }
+#yutorah-bulk-panel .ybp-item { box-shadow: none; border-color: #e1e5d9; }
+#yutorah-bulk-panel .ybp-item:hover { border-color: #9aae86; }
+#yutorah-bulk-panel .ybp-item-title { color: #34472d; }
+#yutorah-bulk-panel .ybp-footer { background: #f7f9f2; box-shadow: none; border-color: #dbe3d2; }
+#yutorah-bulk-panel input { accent-color: #285847; }
+#yutorah-bulk-panel :is(button,input,select):focus-visible, .yutorah-action-btn:focus-visible { outline: 3px solid #8da877; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { #yutorah-bulk-panel, #yutorah-bulk-panel *, .yutorah-action-btn, #yutorah-transcribe-container { transition: none; animation: none; } }

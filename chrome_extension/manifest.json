@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Shiur AI Assistant",
   "description": "Generate AI-powered notes and transcripts from YUTorah shiurim with one click - completely private and local",
-  "version": "5.0.0",
+  "version": "6.1.6",
   "permissions": [
     "storage",
     "alarms"
@@ -10,6 +10,9 @@
   "host_permissions": [
     "*://*.yutorah.org/*",
     "*://*.kolhalashon.com/*",
+    "*://*.shiurbank.org/*",
+    "https://yutorah-player.mrosensweig.workers.dev/*",
+    "https://s3.wasabisys.com/*",
     "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
@@ -19,7 +22,9 @@
     {
       "matches": [
         "*://*.yutorah.org/*",
-        "*://*.kolhalashon.com/*"
+        "*://*.kolhalashon.com/*",
+        "*://*.shiurbank.org/*",
+        "https://yutorah-player.mrosensweig.workers.dev/*"
       ],
       "js": [
         "storage.js",
@@ -47,11 +52,16 @@
         "storage.js",
         "upload.html",
         "upload.js",
-        "upload.css"
+        "upload.css",
+        "sidebar.css",
+        "design-system.css",
+        "app-shell.js"
       ],
       "matches": [
         "*://*.yutorah.org/*",
-        "*://*.kolhalashon.com/*"
+        "*://*.kolhalashon.com/*",
+        "*://*.shiurbank.org/*",
+        "https://yutorah-player.mrosensweig.workers.dev/*"
       ]
     }
   ],

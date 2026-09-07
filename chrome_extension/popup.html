@@ -1,73 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shiur AI Assistant</title>
+    <link rel="stylesheet" href="design-system.css">
     <link rel="stylesheet" href="popup.css">
 </head>
-
-<body>
-    <div class="container">
-        <header>
-            <h1>Shiur AI Assistant</h1>
-            <div id="statusIndicator" class="status-dot" title="Checking API Key..."></div>
-        </header>
-
+<body data-page="popup">
+    <div class="popup-shell">
+        <header class="popup-header"><a class="app-brand" href="viewer.html" target="_blank"><span class="brand-mark" data-icon="book"></span><span>Shiur AI<span class="brand-caption">A companion for learning</span></span></a></header>
         <main>
-            <button id="openSettings" class="menu-item">
-                <span class="icon">⚙️</span>
-                <div class="label">
-                    <span class="title">Settings</span>
-                    <span class="subtitle">Configure API Key</span>
-                </div>
-                <span class="arrow">→</span>
-            </button>
-
-            <button id="viewNotes" class="menu-item">
-                <span class="icon">📝</span>
-                <div class="label">
-                    <span class="title">My Notes</span>
-                    <span class="subtitle">View saved summaries</span>
-                </div>
-                <span class="arrow">→</span>
-            </button>
-
-            <button id="uploadFile" class="menu-item">
-                <span class="icon">📤</span>
-                <div class="label">
-                    <span class="title">Upload & Summarize</span>
-                    <span class="subtitle">Upload audio or PDF files</span>
-                </div>
-                <span class="arrow">→</span>
-            </button>
-
-            <button id="bulkProcesses" class="menu-item">
-                <span class="icon">&#9881;</span>
-                <div class="label">
-                    <span class="title">Bulk Queue Monitor</span>
-                    <span class="subtitle">View and manage all queues</span>
-                </div>
-                <span class="arrow">&#8594;</span>
-            </button>
-
-            <div class="divider"></div>
-
-            <div class="info-section">
-                <p>To use this extension:</p>
-                <ol>
-                    <li>Go to a <strong>yutorah.org</strong> shiur page</li>
-                    <li>Click the <strong>"Summarize"</strong> button on the page</li>
-                </ol>
-            </div>
+            <div class="popup-intro"><div class="eyebrow">LISTEN. LEARN. KEEP THE INSIGHT.</div><h1>Take the learning<br>with you.</h1><p>Your shiurim, thoughtfully organized.</p></div>
+            <button id="viewNotes" class="menu-item featured"><span class="menu-icon" data-icon="library"></span><span class="label"><span class="title">Open your library</span><span class="subtitle">Return to your saved notes</span></span><span class="menu-arrow" data-icon="arrow"></span></button>
+            <button id="uploadFile" class="menu-item"><span class="menu-icon" data-icon="upload"></span><span class="label"><span class="title">Create new notes</span><span class="subtitle">Upload audio or documents</span></span><span class="menu-arrow" data-icon="arrow"></span></button>
+            <button id="bulkProcesses" class="menu-item"><span class="menu-icon" data-icon="queue"></span><span class="label"><span class="title">Processing queue</span><span class="subtitle">Follow your shiurim in progress</span></span><span class="menu-arrow" data-icon="arrow"></span></button>
+            <a class="menu-item web-action" href="https://shiurnotes.com/" target="_blank" rel="noopener noreferrer"><span class="menu-icon" data-icon="web"></span><span class="label"><span class="title">Open ShiurNotes.com</span><span class="subtitle">Create notes from a YUTorah link online</span></span><span class="menu-arrow" data-icon="arrow"></span></a>
         </main>
-
-        <footer>
-            <a href="#" id="openHelp">Need help?</a>
-        </footer>
+        <footer><button id="openSettings" class="popup-settings"><span data-icon="settings"></span>Settings</button><div class="connection-status" role="status"><span id="statusIndicator" class="status-dot"></span><span id="statusText">Checking connection…</span></div><button id="openHelp" class="help-button" aria-label="Getting started" title="Getting started">?</button></footer>
     </div>
     <script src="popup.js"></script>
+    <script src="app-shell.js"></script>
 </body>
-
 </html>

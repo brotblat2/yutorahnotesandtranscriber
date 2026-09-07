@@ -1,671 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yutorah Notes</title>
+    <meta name="description" content="Turn YUTorah shiurim into clear AI-generated notes and transcripts, or keep your learning locally with the Shiur AI Chrome extension.">
+    <meta property="og:title" content="ShiurNotes — From listening to understanding">
+    <meta property="og:description" content="Thoughtful notes and clear transcripts from your shiurim.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://shiurnotes.com/">
+    <meta property="og:image" content="https://shiurnotes.com/static/og.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://shiurnotes.com/static/og.png">
+    <title>ShiurNotes — From listening to understanding</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
-            --primary: #6366f1;
-            /* Indigo 500 */
-            --primary-hover: #4f46e5;
-            /* Indigo 600 */
-            --bg-gradient-start: #f8fafc;
-            --bg-gradient-end: #e2e8f0;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            color-scheme: light;
+            --ink: #27342c;
+            --muted: #69736b;
+            --green: #285847;
+            --green-dark: #1b4033;
+            --sage: #e9efe2;
+            --sage-deep: #d7e2cd;
+            --paper: #fafaf5;
+            --white: #fff;
+            --line: #dcdfd5;
+            --warm: #f3eee1;
+            --danger: #a14335;
         }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-            color: var(--text-main);
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem;
-            box-sizing: border-box;
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.65 'DM Sans', sans-serif; }
+        button, input { font: inherit; }
+        a { color: inherit; }
+        :is(a,button,input):focus-visible { outline: 3px solid #89a278; outline-offset: 3px; }
+        .site-header { height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 1240px; margin: auto; padding: 0 32px; border-bottom: 1px solid var(--line); }
+        .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; font: 28px/1 'Libre Caslon Text', Georgia, serif; color: #213f31; }
+        .brand-mark { width: 40px; height: 42px; display: grid; place-items: center; border-radius: 10px 10px 3px 3px; background: var(--green); color: #f2f1df; font: 22px 'Libre Caslon Text', serif; }
+        .header-actions { display: flex; align-items: center; gap: 22px; font-size: 13px; }
+        .header-actions a { text-decoration: none; }
+        .header-actions a:not(.button):hover { color: var(--green); text-decoration: underline; text-underline-offset: 4px; }
+        .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 18px; border: 1px solid var(--green); border-radius: 7px; background: var(--green); color: white; text-decoration: none; font-weight: 650; cursor: pointer; }
+        .button:hover { background: var(--green-dark); border-color: var(--green-dark); }
+        .button.secondary { background: var(--white); color: var(--ink); border-color: var(--line); }
+        .button.secondary:hover { background: var(--sage); border-color: #aabca0; }
+        main { overflow: hidden; }
+        .hero { max-width: 1240px; margin: auto; padding: 84px 32px 62px; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(400px, .95fr); gap: 72px; align-items: center; }
+        .eyebrow { margin: 0 0 18px; color: #66785d; font-size: 11px; font-weight: 700; letter-spacing: 2.1px; text-transform: uppercase; }
+        h1, h2, h3 { font-family: 'Libre Caslon Text', Georgia, serif; color: #213c2e; text-wrap: balance; }
+        h1 { max-width: 700px; margin: 0; font-size: clamp(46px, 6vw, 76px); line-height: 1.08; letter-spacing: -2.2px; font-weight: 400; }
+        .hero-copy { max-width: 590px; margin: 25px 0 0; color: var(--muted); font-size: 18px; }
+        .hero-note { display: flex; align-items: center; gap: 10px; margin-top: 30px; color: #62705f; font-size: 12px; }
+        .hero-note span { width: 7px; height: 7px; border-radius: 50%; background: #799469; }
+        .composer { position: relative; padding: 34px; border: 1px solid var(--line); border-radius: 14px; background: var(--white); box-shadow: 0 18px 60px rgba(39, 57, 43, .08); }
+        .composer::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; border-radius: 14px 14px 0 0; background: #839d71; }
+        .composer h2 { margin: 0 0 8px; font-size: 28px; font-weight: 400; }
+        .composer > p { margin: 0 0 24px; color: var(--muted); font-size: 13px; }
+        .url-label { display: block; margin-bottom: 8px; color: #425147; font-size: 12px; font-weight: 700; }
+        .url-input { width: 100%; min-height: 54px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: #fdfdf9; color: var(--ink); }
+        .url-input::placeholder { color: #8a9189; }
+        .url-input:focus { border-color: #78916a; outline: 3px solid #e4ecdc; }
+        .mode-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+        .mode-actions button { min-height: 48px; border: 1px solid var(--green); border-radius: 7px; background: var(--green); color: white; font-weight: 650; cursor: pointer; }
+        .mode-actions button:last-child { border-color: var(--sage-deep); background: var(--sage); color: #3b5435; }
+        .mode-actions button:hover { background: var(--green-dark); color: white; }
+        .mode-actions button:disabled { opacity: .55; cursor: wait; }
+        #status { margin-top: 20px; padding: 16px; border-radius: 8px; background: #f1f4eb; color: #5d6f56; font-size: 13px; text-align: center; }
+        .loader { display: inline-block; width: 19px; height: 19px; margin-right: 9px; border: 2px solid #d8e2cf; border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        .trust-row { border-block: 1px solid var(--line); background: #f3f5ee; }
+        .trust-inner { max-width: 1240px; margin: auto; padding: 22px 32px; display: grid; grid-template-columns: repeat(3, 1fr); }
+        .trust-item { padding: 0 28px; border-right: 1px solid var(--line); }
+        .trust-item:first-child { padding-left: 0; }
+        .trust-item:last-child { border: 0; }
+        .trust-item strong { display: block; color: #354c39; font-family: 'Libre Caslon Text', serif; font-size: 18px; }
+        .trust-item span { color: var(--muted); font-size: 12px; }
+        .result-wrap { max-width: 1000px; margin: 0 auto; padding: 64px 32px; }
+        .result-label { margin-bottom: 14px; color: #697b60; font-size: 10px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
+        #result { padding: clamp(26px, 5vw, 56px); border: 1px solid var(--line); border-radius: 12px; background: white; line-height: 1.85; overflow-wrap: anywhere; }
+        #result[dir="rtl"] { text-align: right; }
+        #result :is(h1,h2,h3) { margin-top: 1.5em; letter-spacing: -.3px; }
+        #result h1:first-child { margin-top: 0; }
+        #result blockquote { margin: 1.5rem 0; padding: 12px 18px; border-left: 3px solid #879f76; background: #f3f6ee; color: var(--muted); }
+        #result[dir="rtl"] blockquote { border-left: 0; border-right: 3px solid #879f76; }
+        .extension-section { max-width: 1240px; margin: 0 auto 80px; padding: 0 32px; }
+        .extension-card { display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center; padding: 38px 42px; border: 1px solid #d6dfcd; border-radius: 13px; background: #edf1e5; }
+        .extension-card h2 { margin: 0 0 10px; font-size: 31px; font-weight: 400; }
+        .extension-card p { max-width: 680px; margin: 0; color: var(--muted); font-size: 14px; }
+        footer { border-top: 1px solid var(--line); }
+        .footer-inner { max-width: 1240px; margin: auto; padding: 25px 32px; display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font-size: 12px; }
+        .footer-links { display: flex; gap: 20px; }
+        .footer-links a:hover { color: var(--green); }
+        @media (max-width: 880px) {
+            .hero { grid-template-columns: 1fr; gap: 45px; padding-top: 58px; }
+            .composer { max-width: 650px; }
+            .extension-card { grid-template-columns: 1fr; }
         }
-
-        .main-container {
-            width: 100%;
-            max-width: 900px;
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            box-shadow: var(--shadow-lg);
-            padding: 3rem;
-            transition: transform 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.5);
+        @media (max-width: 620px) {
+            .site-header { height: auto; padding: 18px 20px; }
+            .brand { font-size: 23px; }
+            .brand-mark { width: 34px; height: 36px; }
+            .header-actions > a:not(.button) { display: none; }
+            .header-actions .button { min-height: 38px; padding: 8px 12px; font-size: 11px; }
+            .hero { padding: 48px 20px; }
+            h1 { font-size: 44px; letter-spacing: -1.4px; }
+            .hero-copy { font-size: 16px; }
+            .composer { padding: 25px 20px; }
+            .mode-actions { grid-template-columns: 1fr; }
+            .trust-inner { grid-template-columns: 1fr; padding: 10px 20px; }
+            .trust-item, .trust-item:first-child { padding: 16px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+            .trust-item:last-child { border-bottom: 0; }
+            .result-wrap, .extension-section { padding-inline: 20px; }
+            .extension-card { padding: 28px 24px; }
+            .footer-inner { align-items: flex-start; flex-direction: column; padding-inline: 20px; }
         }
-
-        h1 {
-            font-weight: 700;
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to right, #4f46e5, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.02em;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 3rem;
-            font-size: 1.1rem;
-        }
-
-        .input-group {
-            position: relative;
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            background: white;
-            padding: 0.5rem;
-            border-radius: 16px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-
-        .input-group:focus-within {
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-            border-color: var(--primary);
-        }
-
-        input[type="url"] {
-            flex: 1;
-            border: none;
-            padding: 1rem 1.5rem;
-            font-size: 1.1rem;
-            outline: none;
-            background: transparent;
-            font-family: inherit;
-            color: var(--text-main);
-            width: 100%;
-        }
-
-        button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-            font-family: inherit;
-        }
-
-        button:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-
-        button:disabled {
-            background: var(--text-muted);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        #status {
-            text-align: center;
-            margin: 2rem 0;
-            min-height: 60px;
-        }
-
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #e2e8f0;
-            border-bottom-color: var(--primary);
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
-        }
-
-        @keyframes rotation {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .status-text {
-            margin-top: 1rem;
-            color: var(--text-muted);
-            font-weight: 500;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                opacity: 0.6;
-            }
-
-            50% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0.6;
-            }
-        }
-
-        #result {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            line-height: 1.8;
-            font-size: 1.05rem;
-            color: #334155;
-            animation: slideUp 0.5s ease-out;
-        }
-
-        #result h1,
-        #result h2,
-        #result h3 {
-            color: #1e293b;
-            margin-top: 2rem;
-        }
-
-        #result h1:first-child {
-            margin-top: 0;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Markdown Styles */
-        #result blockquote {
-            border-left: 4px solid var(--primary);
-            margin: 1.5rem 0;
-            padding-left: 1rem;
-            color: var(--text-muted);
-            font-style: italic;
-            background: #f8fafc;
-            padding: 1rem;
-            border-radius: 0 8px 8px 0;
-        }
-
-        #result code {
-            background: #f1f5f9;
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.9em;
-            color: #ef4444;
-        }
-
-        @media (max-width: 640px) {
-            .main-container {
-                padding: 1.5rem;
-            }
-
-            .input-group {
-                flex-direction: column;
-                padding: 1rem;
-                gap: 0.5rem;
-            }
-
-            button {
-                width: 100%;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; } }
     </style>
 </head>
-
-```html
-}
-
-.subtitle {
-text-align: center;
-color: var(--text-muted);
-margin-bottom: 3rem;
-font-size: 1.1rem;
-}
-
-.input-group {
-position: relative;
-display: flex;
-gap: 1rem;
-margin-bottom: 2rem;
-background: white;
-padding: 0.5rem;
-border-radius: 16px;
-box-shadow: var(--shadow-sm);
-border: 1px solid var(--border-color);
-transition: all 0.3s ease;
-}
-
-.input-group:focus-within {
-box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-border-color: var(--primary);
-}
-
-input[type="url"] {
-flex: 1;
-border: none;
-padding: 1rem 1.5rem;
-font-size: 1.1rem;
-outline: none;
-background: transparent;
-font-family: inherit;
-color: var(--text-main);
-width: 100%;
-}
-
-button {
-background: var(--primary);
-color: white;
-border: none;
-padding: 1rem 2rem;
-border-radius: 12px;
-font-size: 1rem;
-font-weight: 600;
-cursor: pointer;
-transition: all 0.2s ease;
-white-space: nowrap;
-font-family: inherit;
-}
-
-button:hover {
-background: var(--primary-hover);
-transform: translateY(-1px);
-box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-
-button:disabled {
-background: var(--text-muted);
-cursor: not-allowed;
-transform: none;
-box-shadow: none;
-}
-
-#status {
-text-align: center;
-margin: 2rem 0;
-min-height: 60px;
-}
-
-.loader {
-width: 48px;
-height: 48px;
-border: 5px solid #e2e8f0;
-border-bottom-color: var(--primary);
-border-radius: 50%;
-display: inline-block;
-box-sizing: border-box;
-animation: rotation 1s linear infinite;
-}
-
-@keyframes rotation {
-0% {
-transform: rotate(0deg);
-}
-
-100% {
-transform: rotate(360deg);
-}
-}
-
-.status-text {
-margin-top: 1rem;
-color: var(--text-muted);
-font-weight: 500;
-animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-0% {
-opacity: 0.6;
-}
-
-50% {
-opacity: 1;
-}
-
-100% {
-opacity: 0.6;
-}
-}
-
-#result {
-background: white;
-padding: 2.5rem;
-border-radius: 16px;
-border: 1px solid var(--border-color);
-line-height: 1.8;
-font-size: 1.05rem;
-color: #334155;
-animation: slideUp 0.5s ease-out;
-}
-
-#result h1,
-#result h2,
-#result h3 {
-color: #1e293b;
-margin-top: 2rem;
-}
-
-#result h1:first-child {
-margin-top: 0;
-}
-
-.hidden {
-display: none !important;
-}
-
-@keyframes slideUp {
-from {
-opacity: 0;
-transform: translateY(20px);
-}
-
-to {
-opacity: 1;
-transform: translateY(0);
-}
-}
-
-/* Markdown Styles */
-#result blockquote {
-border-left: 4px solid var(--primary);
-margin: 1.5rem 0;
-padding-left: 1rem;
-color: var(--text-muted);
-font-style: italic;
-background: #f8fafc;
-padding: 1rem;
-border-radius: 0 8px 8px 0;
-}
-
-#result code {
-background: #f1f5f9;
-padding: 0.2rem 0.4rem;
-border-radius: 4px;
-font-family: 'Monaco', 'Consolas', monospace;
-font-size: 0.9em;
-color: #ef4444;
-}
-
-@media (max-width: 640px) {
-.main-container {
-padding: 1.5rem;
-}
-
-.input-group {
-flex-direction: column;
-padding: 1rem;
-gap: 0.5rem;
-}
-
-button {
-width: 100%;
-}
-
-h1 {
-font-size: 2rem;
-}
-}
-
-@keyframes shake {
-0%, 100% { transform: translateX(0); }
-25% { transform: translateX(-5px); }
-75% { transform: translateX(5px); }
-}
-</style>
-</head>
-
 <body>
-    <div class="main-container">
-        <h1>Yutorah Notes</h1>
-        <p class="subtitle">Transform audio shiurim into comprehensive, clear notes with AI.</p>
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="ShiurNotes home"><span class="brand-mark" aria-hidden="true">ש</span><span>ShiurNotes</span></a>
+        <nav class="header-actions" aria-label="Main navigation">
+            <a href="#create">Create notes</a>
+            <a href="#extension">About the extension</a>
+            <a class="button" href="https://chromewebstore.google.com/detail/shiur-ai-assistant/nfkenagfgiiobeaadckifeljnndjpbdl" target="_blank" rel="noopener noreferrer">Add to Chrome ↗</a>
+        </nav>
+    </header>
 
-        <div class="input-group">
-            <input type="url" id="urlInput" placeholder="Paste Yutorah Shiur URL here..." required autocomplete="off">
-            <button id="generateBtn" onclick="generateNotes('notes')">
-                <span>Generate Notes</span>
-            </button>
-            <button id="transcribeBtn" onclick="generateNotes('transcript')"
-                style="background-color: #10b981; margin-left: 0.5rem;">
-                <span>Transcribe</span>
-            </button>
-        </div>
+    <main>
+        <section class="hero">
+            <div>
+                <p class="eyebrow">LEARN. REFLECT. RETURN.</p>
+                <h1>From listening<br>to understanding.</h1>
+                <p class="hero-copy">Turn a shiur into thoughtful notes or a clear transcript, ready to revisit whenever the learning calls you back.</p>
+                <p class="hero-note"><span aria-hidden="true"></span>Works with YUTorah links. No account required.</p>
+            </div>
+            <form class="composer" id="create" novalidate>
+                <h2>Begin with a shiur.</h2>
+                <p>Paste a YUTorah lesson link and choose what you want to create.</p>
+                <label class="url-label" for="urlInput">YUTorah shiur URL</label>
+                <input class="url-input" type="url" id="urlInput" placeholder="https://www.yutorah.org/lectures/…" required autocomplete="url" inputmode="url">
+                <div class="mode-actions">
+                    <button id="generateBtn" type="submit" data-mode="notes">Create notes</button>
+                    <button id="transcribeBtn" type="button" data-mode="transcript">Create transcript</button>
+                </div>
+                <div id="status" class="hidden" role="status" aria-live="polite"><span class="loader" aria-hidden="true"></span><span id="statusText">Preparing your shiur…</span></div>
+            </form>
+        </section>
 
-        <div id="status" class="hidden">
-            <span class="loader"></span>
-            <p id="statusText" class="status-text">Processing your request...</p>
-        </div>
+        <section class="trust-row" aria-label="Service details">
+            <div class="trust-inner">
+                <div class="trust-item"><strong>One link</strong><span>Start with any YUTorah shiur page.</span></div>
+                <div class="trust-item"><strong>Two useful formats</strong><span>Choose thoughtful notes or a full transcript.</span></div>
+                <div class="trust-item"><strong>Your learning, your way</strong><span>Use the web app here or keep a local library in Chrome.</span></div>
+            </div>
+        </section>
 
-        <div id="result" class="hidden"></div>
-    </div>
+        <section id="resultSection" class="result-wrap hidden" aria-labelledby="resultHeading">
+            <div class="result-label" id="resultHeading">YOUR SHIUR NOTES</div>
+            <article id="result"></article>
+        </section>
+
+        <section class="extension-section" id="extension">
+            <div class="extension-card">
+                <div><p class="eyebrow">A COMPANION FOR REGULAR LEARNING</p><h2>Keep every shiur close at hand.</h2><p>The Shiur AI extension works directly on YUTorah, Kol Halashon, and ShiurBank. It saves notes privately in your browser, gives you a searchable library, and exports to Word or PDF.</p></div>
+                <a class="button" href="https://chromewebstore.google.com/detail/shiur-ai-assistant/nfkenagfgiiobeaadckifeljnndjpbdl" target="_blank" rel="noopener noreferrer">Get the Chrome extension ↗</a>
+            </div>
+        </section>
+    </main>
+
+    <footer><div class="footer-inner"><span>© 2026 ShiurNotes</span><div class="footer-links"><a href="/privacy">Privacy</a><a href="mailto:shiurnotes@yahoo.com">Contact</a><a href="https://chromewebstore.google.com/detail/shiur-ai-assistant/nfkenagfgiiobeaadckifeljnndjpbdl" target="_blank" rel="noopener noreferrer">Chrome extension ↗</a></div></div></footer>
 
     <script>
-        // Version: 2.1 - Added Transcription support
-        // Check for URL parameter on page load and auto-fill
-        window.addEventListener('DOMContentLoaded', function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const yutorahUrl = urlParams.get('url');
-            const mode = urlParams.get('mode'); // 'notes' or 'transcript'
+        const form = document.getElementById('create');
+        const urlInput = document.getElementById('urlInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const transcribeBtn = document.getElementById('transcribeBtn');
+        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        const resultSection = document.getElementById('resultSection');
+        const resultDiv = document.getElementById('result');
+        const loader = document.querySelector('.loader');
 
-            if (yutorahUrl) {
-                const urlInput = document.getElementById('urlInput');
-                if (urlInput) {
-                    urlInput.value = yutorahUrl;
-                    // Auto-submit after a short delay to ensure page is ready
-                    setTimeout(() => {
-                        if (mode === 'transcript') {
-                            const transcribeBtn = document.getElementById('transcribeBtn');
-                            if (transcribeBtn) transcribeBtn.click();
-                        } else {
-                            const generateBtn = document.getElementById('generateBtn');
-                            if (generateBtn) generateBtn.click();
-                        }
-                    }, 500);
-                }
-            }
-        });
-
-        function extractErrorFromResponse(text, statusCode) {
-            // Try to extract error information from various response formats
-
-            // 1. Check if it's HTML and look for common error patterns
-            if (text.trim().startsWith('<')) {
-                // Create a temporary DOM element to parse HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(text, 'text/html');
-
-                // Look for common error message locations in HTML
-                const errorSelectors = [
-                    'title',
-                    'h1',
-                    '.error',
-                    '#error',
-                    '[class*="error"]',
-                    '[id*="error"]',
-                    'body > p',
-                    'body > div'
-                ];
-
-                for (const selector of errorSelectors) {
-                    const element = doc.querySelector(selector);
-                    if (element && element.textContent.trim()) {
-                        const errorText = element.textContent.trim();
-                        // Filter out generic HTML boilerplate
-                        if (errorText.length > 10 &&
-                            !errorText.toLowerCase().includes('html') &&
-                            !errorText.toLowerCase().includes('doctype')) {
-                            return `${errorText} (HTTP ${statusCode})`;
-                        }
-                    }
-                }
-
-                // Look for text content in body
-                const bodyText = doc.body ? doc.body.textContent.trim() : '';
-                if (bodyText && bodyText.length < 500) {
-                    // If body text is short, it might be an error message
-                    return `${bodyText.substring(0, 200)} (HTTP ${statusCode})`;
-                }
-            }
-
-            // 2. Check if it looks like a plain text error message
-            const trimmedText = text.trim();
-            if (trimmedText.length > 0 && trimmedText.length < 500 && !trimmedText.startsWith('<!')) {
-                return `${trimmedText.substring(0, 200)} (HTTP ${statusCode})`;
-            }
-
-            // 3. Check for JSON-like structure that might have error info
-            try {
-                const jsonData = JSON.parse(text);
-                if (jsonData.error) {
-                    return jsonData.error;
-                }
-                if (jsonData.message) {
-                    return jsonData.message;
-                }
-            } catch (e) {
-                // Not JSON, continue
-            }
-
-            // 4. Fallback: return status code and truncated response
-            const preview = text.substring(0, 150).replace(/\s+/g, ' ');
-            return `Server returned non-JSON response (HTTP ${statusCode}): ${preview}${text.length > 150 ? '...' : ''}`;
-        }
-
-        async function generateNotes(type = 'notes') {
-            const urlInput = document.getElementById('urlInput');
-            const generateBtn = document.getElementById('generateBtn');
-            const transcribeBtn = document.getElementById('transcribeBtn');
-            const statusDiv = document.getElementById('status');
-            const statusText = document.getElementById('statusText');
-            const resultDiv = document.getElementById('result');
-
-            const url = urlInput.value.trim();
-            if (!url) {
-                // Shake animation for error
-                urlInput.parentElement.style.animation = 'shake 0.5s';
-                setTimeout(() => urlInput.parentElement.style.animation = '', 500);
-                return;
-            }
-
-            // Reset UI
-            generateBtn.disabled = true;
-            transcribeBtn.disabled = true;
-            generateBtn.innerHTML = 'Processing...';
-            transcribeBtn.innerHTML = 'Processing...';
+        function hasHebrew(text) { return /[\u0590-\u05ff]/.test(text || ''); }
+        function setBusy(isBusy) { generateBtn.disabled = isBusy; transcribeBtn.disabled = isBusy; }
+        function showError(message) {
             statusDiv.classList.remove('hidden');
-            resultDiv.classList.add('hidden');
-            resultDiv.innerHTML = '';
-            statusText.textContent = type === 'transcript' ?
-                "Finding audio and generating transcript... (This may take a few minutes)" :
-                "Finding audio and generating notes... (This may take a minute)";
-
-            try {
-                const response = await fetch('/process', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ url: url, type: type }),
-                });
-
-                // Get response text first (can only read once)
-                const responseText = await response.text();
-                const contentType = response.headers.get('content-type');
-                let data;
-
-                // Check if response looks like HTML (starts with <)
-                const looksLikeHTML = responseText.trim().startsWith('<');
-
-                // Try to parse as JSON only if:
-                // 1. Content-Type says it's JSON AND it doesn't look like HTML
-                // 2. OR Content-Type is missing/null but it doesn't look like HTML
-                const shouldTryJSON = (contentType && contentType.includes('application/json')) ||
-                    (!contentType && !looksLikeHTML);
-
-                if (shouldTryJSON && !looksLikeHTML) {
-                    try {
-                        data = JSON.parse(responseText);
-                    } catch (parseError) {
-                        // JSON parsing failed - extract error from response
-                        const errorInfo = extractErrorFromResponse(responseText, response.status);
-                        throw new Error(errorInfo);
-                    }
-                } else {
-                    // Not JSON - extract useful information from HTML/text
-                    const errorInfo = extractErrorFromResponse(responseText, response.status);
-                    throw new Error(errorInfo);
-                }
-
-                if (response.ok) {
-                    statusDiv.classList.add('hidden');
-                    resultDiv.classList.remove('hidden');
-                    // Render Markdown
-                    resultDiv.innerHTML = marked.parse(data.notes);
-                } else {
-                    throw new Error(data.error || 'An error occurred');
-                }
-            } catch (error) {
-                statusDiv.classList.remove('hidden');
-                document.querySelector('.loader').style.display = 'none';
-                statusText.textContent = `Error: ${error.message}`;
-                statusText.style.color = '#ef4444';
-                statusText.style.animation = 'none';
-            } finally {
-                generateBtn.disabled = false;
-                transcribeBtn.disabled = false;
-                generateBtn.innerHTML = 'Generate Notes';
-                transcribeBtn.innerHTML = 'Transcribe';
-                if (statusText.textContent.includes('Error')) {
-                    // Keep error visible
-                } else {
-                    // Reset loader for next time if successful
-                    document.querySelector('.loader').style.display = 'inline-block';
-                }
-            }
+            loader.classList.add('hidden');
+            statusText.textContent = `We couldn't finish that request: ${message}`;
+            statusText.style.color = 'var(--danger)';
         }
+        function responseError(text, status) {
+            try { const data = JSON.parse(text); return data.error || data.message || `Request failed (${status})`; }
+            catch { return text.trim().replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 180) || `Request failed (${status})`; }
+        }
+        async function generateNotes(type = 'notes') {
+            const url = urlInput.value.trim();
+            if (!url) { urlInput.setAttribute('aria-invalid', 'true'); urlInput.focus(); return; }
+            urlInput.removeAttribute('aria-invalid');
+            setBusy(true);
+            loader.classList.remove('hidden');
+            statusText.style.color = '';
+            statusText.textContent = type === 'transcript' ? 'Finding the audio and preparing your transcript…' : 'Finding the audio and shaping your notes…';
+            statusDiv.classList.remove('hidden');
+            resultSection.classList.add('hidden');
+            try {
+                const response = await fetch('/process', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url, type}) });
+                const responseText = await response.text();
+                if (!response.ok) throw new Error(responseError(responseText, response.status));
+                let data;
+                try { data = JSON.parse(responseText); } catch { throw new Error('The server returned an unreadable response.'); }
+                if (!data.notes) throw new Error('No notes were returned.');
+                statusDiv.classList.add('hidden');
+                resultDiv.innerHTML = marked.parse(data.notes);
+                resultDiv.dir = hasHebrew(data.notes) ? 'rtl' : 'ltr';
+                resultSection.classList.remove('hidden');
+                resultSection.scrollIntoView({behavior: 'smooth', block: 'start'});
+            } catch (error) { showError(error.message); }
+            finally { setBusy(false); }
+        }
+        form.addEventListener('submit', event => { event.preventDefault(); generateNotes('notes'); });
+        transcribeBtn.addEventListener('click', () => generateNotes('transcript'));
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(location.search);
+            const shiurUrl = params.get('url');
+            if (!shiurUrl) return;
+            urlInput.value = shiurUrl;
+            generateNotes(params.get('mode') === 'transcript' ? 'transcript' : 'notes');
+        });
     </script>
 </body>
-
 </html>
-```

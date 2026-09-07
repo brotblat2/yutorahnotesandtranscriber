@@ -1,6 +1,8 @@
 // Options page JavaScript for YUTorah Notes Extension
 
 document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('extensionVersion').textContent = chrome.runtime.getManifest().version;
+
     // Load existing API key
     await loadApiKey();
 
@@ -63,15 +65,44 @@ async function saveApiKey() {
         return;
     }
 
+    showStatus('apiKeyStatus', 'Verifying your API key with Google...', 'info');
+
     try {
+        const validation = await validateApiKey(apiKey);
+        if (!validation.valid) {
+            showStatus('apiKeyStatus', `❌ ${validation.error}`, 'error');
+            return;
+        }
+
         await Storage.setApiKey(apiKey);
-        // Automatically switch to custom mode when saving a custom key
         await Storage.setKeyMode('custom');
         document.getElementById('modeCustom').checked = true;
-        showStatus('apiKeyStatus', 'API key saved successfully! Switched to Custom Key mode.', 'success');
+        handleModeChange();
+        showStatus('apiKeyStatus', '✅ Connected! Your API key is valid, saved, and ready to use.', 'success');
     } catch (error) {
-        showStatus('apiKeyStatus', 'Error saving API key: ' + error.message, 'error');
+        showStatus('apiKeyStatus', '❌ Could not verify the key: ' + error.message, 'error');
     }
+}
+
+async function validateApiKey(apiKey) {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+        headers: { 'x-goog-api-key': apiKey }
+    });
+
+    if (response.ok) return { valid: true };
+
+    const responseText = await response.text();
+    let detail = '';
+    try {
+        detail = JSON.parse(responseText)?.error?.message || '';
+    } catch (error) {
+        detail = responseText;
+    }
+
+    return {
+        valid: false,
+        error: detail || 'Google rejected this API key. Copy it again from Google AI Studio and retry.'
+    };
 }
 
 /**
@@ -85,19 +116,14 @@ async function testApiKey() {
         return;
     }
 
-    showStatus('apiKeyStatus', 'Testing API key...', 'info');
+    showStatus('apiKeyStatus', 'Testing your API key with Google...', 'info');
 
     try {
-        // Make a simple request to test the API key
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-        );
-
-        if (response.ok) {
+        const validation = await validateApiKey(apiKey);
+        if (validation.valid) {
             showStatus('apiKeyStatus', '✅ API key is valid and working!', 'success');
         } else {
-            const error = await response.text();
-            showStatus('apiKeyStatus', '❌ API key is invalid: ' + error, 'error');
+            showStatus('apiKeyStatus', `❌ ${validation.error}`, 'error');
         }
     } catch (error) {
         showStatus('apiKeyStatus', '❌ Error testing API key: ' + error.message, 'error');
@@ -130,10 +156,12 @@ function toggleApiKeyVisibility() {
 
     if (input.type === 'password') {
         input.type = 'text';
-        button.textContent = '🙈';
+        button.textContent = 'Hide';
+        button.setAttribute('aria-label', 'Hide API key');
     } else {
         input.type = 'password';
-        button.textContent = '👁️';
+        button.textContent = 'Show';
+        button.setAttribute('aria-label', 'Show API key');
     }
 }
 
@@ -307,10 +335,12 @@ function togglePromptsSection() {
 
     if (section.style.display === 'none') {
         section.style.display = 'block';
-        button.textContent = '🔼 Hide Advanced Options';
+        button.textContent = 'Hide custom prompts';
+        button.setAttribute('aria-expanded', 'true');
     } else {
         section.style.display = 'none';
-        button.textContent = '🔧 Advanced Options (Optional)';
+        button.textContent = 'Customize prompts';
+        button.setAttribute('aria-expanded', 'false');
     }
 }
 
@@ -342,13 +372,16 @@ function handleModeChange() {
     const mode = document.querySelector('input[name="keyMode"]:checked').value;
     const customKeySection = document.getElementById('customKeySection');
     const usageStats = document.getElementById('usageStats');
+    const saveModeSection = document.getElementById('saveModeSection');
 
     if (mode === 'custom') {
         customKeySection.style.display = 'block';
         usageStats.style.display = 'none';
+        saveModeSection.style.display = 'none';
     } else {
         customKeySection.style.display = 'none';
         usageStats.style.display = 'block';
+        saveModeSection.style.display = 'flex';
         updateUsageDisplay();
     }
 }
