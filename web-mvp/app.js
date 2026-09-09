@@ -142,7 +142,7 @@ const tabbar = $("#tabbar"), addDialog = $("#addDialog"), keyDialog = $("#keyDia
 const urlInput = $("#shiurUrl"), audioInput = $("#audioFile");
 
 function esc(v=""){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({notes:state.notes,settings:state.settings}));}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({notes:state.notes,settings:state.settings}));window.ShiurNotesExtensionSync?.scheduleSync();}
 function showToast(m){toast.textContent=m;toast.classList.add("show");clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove("show"),2200);}
 function formatDate(v){return new Date(v).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
 function apiKey(){return localStorage.getItem(API_KEY_KEY)||"";}
@@ -190,6 +190,7 @@ function renderSettings(){
     </div></div>
     <div class="settings-group"><h2>Data</h2><div class="settings-card">
       <div class="setting-row"><span>Saved shiurim</span><small>${state.notes.length}</small></div>
+      <div class="setting-row"><span>Chrome extension<small id="extensionSyncDetail" style="display:block; margin-top:3px;">Checking this browser…</small></span><button id="extensionSyncButton">Checking…</button></div>
       <div class="setting-row"><span>Export library</span><button id="export">Export</button></div>
       <div class="setting-row"><span>Clear API key</span><button id="clearKey">Clear</button></div>
     </div></div>
@@ -199,6 +200,8 @@ function renderSettings(){
   $("#cycleOutput").onclick=()=>{const a=["notes","transcript","maamar"];state.settings.defaultOutput=a[(a.indexOf(state.settings.defaultOutput)+1)%a.length];save();renderSettings();};
   document.querySelectorAll("[data-prompt]").forEach(b=>b.onclick=()=>editPrompt(b.dataset.prompt));
   $("#export").onclick=exportLibrary;$("#clearKey").onclick=()=>{localStorage.removeItem(API_KEY_KEY);renderSettings();showToast("API key removed");};
+  $("#extensionSyncButton").onclick=()=>window.ShiurNotesExtensionSync?.connectOrSync();
+  window.ShiurNotesExtensionSync?.renderStatus();
 }
 function editPrompt(type){
   const key=type==="notes"?"customNotesPrompt":type==="transcript"?"customTranscriptPrompt":"customMaamarPrompt";
@@ -323,7 +326,7 @@ function renderReader(){
   <article class="document">${renderMarkdown(n.markdown)}</article></section>`;
   $("#copy").onclick=async()=>{await navigator.clipboard.writeText(n.markdown);showToast("Copied");};
   $("#share").onclick=async()=>{if(navigator.share)await navigator.share({title:n.title,text:n.markdown});else showToast("Sharing is not available here");};
-  $("#delete").onclick=()=>{if(confirm("Delete this item?")){state.notes=state.notes.filter(x=>x.id!==n.id);save();go("library",false);}};
+  $("#delete").onclick=()=>{if(confirm("Delete this item?")){window.ShiurNotesExtensionSync?.recordDeletion(n);state.notes=state.notes.filter(x=>x.id!==n.id);save();go("library",false);}};
 }
 function renderMarkdown(md=""){
   const lines=md.replace(/\r/g,"").split("\n");let out="",inList=false;
