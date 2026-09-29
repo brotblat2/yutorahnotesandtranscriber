@@ -1,0 +1,17 @@
+.issue-card{margin-top:20px;padding:18px;border:1px solid #d8e0e8;border-left:4px solid #647c96;border-radius:12px;background:#f6f8fb;color:#27384b}
+.issue-eyebrow{display:flex;align-items:center;gap:8px;color:#586b80;font-size:12px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}
+.issue-mark{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#e2eaf2;color:#3d5874;font-size:12px}
+.issue-card h3{margin:12px 0 7px;color:#1d2c3e;font:600 20px/1.25 Georgia,serif}
+.issue-explanation{margin:0;color:#435265;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.issue-action{margin-top:14px;padding:12px;border-radius:9px;background:#eaf0f6;color:#374a60;font-size:13px;line-height:1.5}
+.issue-action p{margin:4px 0 0}
+.issue-card .secondary-button{margin-top:14px}
+.issue-card.issue-google{border-left-color:#568066;background:#f5f9f5}
+.issue-google .issue-mark{background:#e0ede3;color:#356347}
+.issue-google .issue-action{background:#eaf3ec;color:#385643}
+.issue-card.issue-connection{border-left-color:#a87928;background:#fbf8f0}
+.issue-connection .issue-mark{background:#f3ead5;color:#815d1f}
+.issue-connection .issue-mark{font-size:0}
+.issue-connection .issue-mark:after{content:"C";font-size:12px}
+.issue-connection .issue-action{background:#f6efdf;color:#665129}
+@media(prefers-color-scheme:dark){.issue-card{background:#1d252d;border-color:#3a4651;color:#e5ebf1}.issue-card h3{color:#f0f3f7}.issue-explanation{color:#c6d0dc}.issue-action{background:#26333f;color:#d2dce7}.issue-card.issue-google{background:#1d2922}.issue-google .issue-mark,.issue-google .issue-action{background:#293c30;color:#d1e4d6}.issue-card.issue-connection{background:#2a261e}.issue-connection .issue-mark,.issue-connection .issue-action{background:#403722;color:#ead9b1}}

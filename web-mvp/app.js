@@ -142,7 +142,7 @@ const tabbar = $("#tabbar"), addDialog = $("#addDialog"), keyDialog = $("#keyDia
 const urlInput = $("#shiurUrl"), audioInput = $("#audioFile");
 
 function esc(v=""){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({notes:state.notes,settings:state.settings}));}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify({notes:state.notes,settings:state.settings}));window.ShiurNotesExtensionSync?.scheduleSync();}
 function showToast(m){toast.textContent=m;toast.classList.add("show");clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove("show"),2200);}
 function formatDate(v){return new Date(v).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
 function apiKey(){return localStorage.getItem(API_KEY_KEY)||"";}
@@ -190,6 +190,7 @@ function renderSettings(){
     </div></div>
     <div class="settings-group"><h2>Data</h2><div class="settings-card">
       <div class="setting-row"><span>Saved shiurim</span><small>${state.notes.length}</small></div>
+      <div class="setting-row"><span>Chrome extension<small id="extensionSyncDetail" style="display:block; margin-top:3px;">Checking this browser…</small></span><button id="extensionSyncButton">Checking…</button></div>
       <div class="setting-row"><span>Export library</span><button id="export">Export</button></div>
       <div class="setting-row"><span>Clear API key</span><button id="clearKey">Clear</button></div>
     </div></div>
@@ -199,6 +200,8 @@ function renderSettings(){
   $("#cycleOutput").onclick=()=>{const a=["notes","transcript","maamar"];state.settings.defaultOutput=a[(a.indexOf(state.settings.defaultOutput)+1)%a.length];save();renderSettings();};
   document.querySelectorAll("[data-prompt]").forEach(b=>b.onclick=()=>editPrompt(b.dataset.prompt));
   $("#export").onclick=exportLibrary;$("#clearKey").onclick=()=>{localStorage.removeItem(API_KEY_KEY);renderSettings();showToast("API key removed");};
+  $("#extensionSyncButton").onclick=()=>window.ShiurNotesExtensionSync?.connectOrSync();
+  window.ShiurNotesExtensionSync?.renderStatus();
 }
 function editPrompt(type){
   const key=type==="notes"?"customNotesPrompt":type==="transcript"?"customTranscriptPrompt":"customMaamarPrompt";
@@ -264,20 +267,28 @@ function getPrompt(type){
 }
 function updateProgress(step,message,percent){state.processing={step,message,percent,error:""};renderProcessing();}
 function renderProcessing(){
-  configure("Generating",{back:false,tabs:false});
+  configure(state.processing?.error?"Processing paused":"Generating",{back:false,tabs:false});
   const p=state.processing||{step:0,message:"Preparing",percent:5,error:""};
   const steps=["Source ready","Audio uploaded","Gemini processing","Result saved"];
-  app.innerHTML=`<section class="screen"><div class="progress-card"><p class="kicker">${labelType(state.draft.output).toUpperCase()}</p><h2>${esc(state.draft.title)}</h2><p class="meta">${esc(p.message)}</p>
+  app.innerHTML=`<section class="screen"><div class="progress-card"><p class="kicker">${labelType(state.draft.output).toUpperCase()}</p><h2>${esc(state.draft.title)}</h2><p class="meta">${esc(p.error?"Processing stopped. See the update below.":p.message)}</p>
   <div class="progress-bar"><span style="width:${p.percent}%"></span></div><div class="steps">${steps.map((s,i)=>`<div class="step ${i<p.step?"done":i===p.step?"active":""}"><span class="step-dot"></span><span>${s}</span></div>`).join("")}</div>
-  ${p.error?`<div class="error-box">${esc(p.error)}</div><button class="secondary-button" id="retry">Try again</button>`:""}</div></section>`;
+  ${p.error?`<section class="issue-card issue-${esc(p.error.kind)}" role="alert"><div class="issue-eyebrow"><span class="issue-mark" aria-hidden="true">${p.error.kind==="google"?"G":p.error.kind==="connection"?"C":"i"}</span>${esc(p.error.source)}</div><h3>${esc(p.error.title)}</h3><p class="issue-explanation">${esc(p.error.explanation)}</p><div class="issue-action"><strong>What you can do</strong><p>${esc(p.error.action)}</p></div>${p.error.kind==="setup"?`<button class="secondary-button" id="reviewKey">Review API key</button><button class="secondary-button" id="retry">Try again</button>`:`<button class="secondary-button" id="retry">Try again</button>`}</section>`:""}</div></section>`;
   if($("#retry"))$("#retry").onclick=beginGeneration;
+  if($("#reviewKey"))$("#reviewKey").onclick=openKeyDialog;
 }
+
 function humanError(e){
-  const m=String(e?.message||e);
-  if(/failed to fetch|cors/i.test(m))return "Safari could not download the audio from that site because of cross-origin restrictions. Download the MP3 and use Import Audio instead.";
-  if(/401|403|api key|permission/i.test(m))return "Gemini rejected the API key. Check the key in Settings and try again.";
-  if(/429|quota|resource_exhausted/i.test(m))return "Gemini rate limit or quota reached. Wait briefly or check the key’s quota.";
-  return m;
+  const m=String(e?.message||e), status=Number(e?.status||0);
+  const issue=(kind,source,title,action)=>({kind,source,title,explanation:m,action});
+  if(e?.code==="GEMINI_CONNECTION_ERROR")return issue("connection","Connection to Google","Could not reach Google Gemini","Check your connection and any browser request blockers, then retry. No response arrived from Google, so the cause is not yet known.");
+  if(e?.code==="GEMINI_HTTP_ERROR"){
+    if(status>=500)return issue("google","Google Gemini service","Google is having a service problem","Google returned a server error. Wait a few minutes and try again; you do not need to change your API key for this error.");
+    if(status===429)return issue("google","Google Gemini limit","Google has limited this request","Wait and retry. If this continues, check your Google project's quota and billing.");
+    if(status===401||status===403||/API_KEY_INVALID|API key not valid/i.test(m))return issue("setup","Google account setup","Google did not accept this API key","Review the saved key and its Gemini API permissions in Google AI Studio.");
+    return issue("other","Request rejected by Google","Google could not accept this request","Review Google's explanation below and check the recording or model being used. Retrying may help if the uploaded file expired.");
+  }
+  if(/failed to fetch|cors|audio download failed/i.test(m))return issue("connection","Audio source connection","Could not download the recording","Check the source link and connection. You can also download the MP3 and import it directly.");
+  return issue("other","Processing update","We couldn't finish this request","Try again. If the problem continues, check the source recording and the explanation above.");
 }
 
 async function resolveAudioUrl(pageUrl){
@@ -296,24 +307,38 @@ async function resolveAudioUrl(pageUrl){
   throw new Error("No audio file was found on the linked page.");
 }
 async function fetchAudio(url){const r=await fetch(url);if(!r.ok)throw new Error(`Audio download failed (${r.status})`);const b=await r.blob();return new File([b],"shiur-audio",{type:b.type||"audio/mpeg"});}
-async function uploadFile(file){
-  const key=apiKey();const start=await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start","X-Goog-Upload-Header-Content-Length":String(file.size),"X-Goog-Upload-Header-Content-Type":file.type||"audio/mpeg","Content-Type":"application/json"},body:JSON.stringify({file:{display_name:file.name||"shiur-audio"}})});
-  if(!start.ok)throw new Error(`Upload start failed (${start.status}): ${await start.text()}`);
+async function geminiFetch(url, options, action){
+  let response;
+  try{response=await fetch(url,options);}catch(error){if(/failed to fetch|networkerror|network error|load failed/i.test(String(error?.message||error))){const wrapped=new Error("The browser could not connect to Google Gemini. Check your connection or whether a VPN, firewall, or browser privacy extension is blocking Google API requests.");wrapped.code="GEMINI_CONNECTION_ERROR";throw wrapped;}throw error;}
+  if(response.ok)return response;
+  const body=await response.text().catch(()=>"");let detail="";try{detail=JSON.parse(body)?.error?.message||"";}catch{detail=body;}
+  const status=response.status;let message;
+  if(status>=500)message=`Google Gemini is having a service problem (${status}) while trying to ${action}. This is on Google's end; ShiurNotes and your API key are not the cause. Please wait a few minutes and try again.`;
+  else if(status===429)message="Google Gemini has limited this request because of a quota or rate limit. The request reached Google successfully. Check the quota and billing for the Google project linked to your key, or wait and retry.";
+  else if(status===401||status===403)message="Google rejected the API key or its permissions. Check the saved key and confirm the Gemini API is enabled for its Google project.";
+  else if(status===404)message="Google could not find the requested Gemini model or uploaded file. Model availability may have changed; try again or check the selected model.";
+  else message=`Google Gemini could not ${action} (${status}).`;
+  const error=new Error(`${message}${detail?` Google says: ${detail}`:""}`);
+  error.code="GEMINI_HTTP_ERROR";error.status=status;throw error;
+}async function uploadFile(file){
+  const key=apiKey();const start=await geminiFetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start","X-Goog-Upload-Header-Content-Length":String(file.size),"X-Goog-Upload-Header-Content-Type":file.type||"audio/mpeg","Content-Type":"application/json"},body:JSON.stringify({file:{display_name:file.name||"shiur-audio"}})},"start the audio upload");
   const url=start.headers.get("X-Goog-Upload-URL");if(!url)throw new Error("Gemini did not return an upload URL.");
-  const finish=await fetch(url,{method:"POST",headers:{"X-Goog-Upload-Command":"upload, finalize","X-Goog-Upload-Offset":"0","Content-Type":file.type||"audio/mpeg"},body:file});
-  if(!finish.ok)throw new Error(`Upload failed (${finish.status}): ${await finish.text()}`);
+  const finish=await geminiFetch(url,{method:"POST",headers:{"X-Goog-Upload-Command":"upload, finalize","X-Goog-Upload-Offset":"0","Content-Type":file.type||"audio/mpeg"},body:file},"receive the audio file");
   const data=await finish.json();await waitForFile(data.file.name);return data.file;
 }
-async function waitForFile(name){for(let i=0;i<45;i++){const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(apiKey())}`);const d=await r.json();if(d.state==="ACTIVE")return;if(d.state==="FAILED")throw new Error("Gemini could not process the audio file.");await new Promise(x=>setTimeout(x,2000));}throw new Error("Timed out waiting for Gemini to process the file.");}
+
+async function waitForFile(name){for(let i=0;i<45;i++){const r=await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(apiKey())}`,undefined,"check the uploaded file");const d=await r.json();if(d.state==="ACTIVE")return;if(d.state==="FAILED")throw new Error("Google Gemini received the upload but could not process the audio file.");await new Promise(x=>setTimeout(x,2000));}throw new Error("Google Gemini has not finished preparing the audio yet. Please try again in a few minutes.");}
+
 async function generateAudio(fileUri,mimeType,type,promptText){
   let last;for(const model of MODELS){try{
-    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey())}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{fileData:{mimeType,fileUri}},{text:promptText}]}],generationConfig:{temperature:.2,topP:.9,maxOutputTokens:65000},safetySettings:[{category:"HARM_CATEGORY_HARASSMENT",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_HATE_SPEECH",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_DANGEROUS_CONTENT",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_SEXUALLY_EXPLICIT",threshold:"BLOCK_NONE"}]})});
-    if(!r.ok)throw new Error(`${r.status}: ${await r.text()}`);const d=await r.json();const text=d?.candidates?.[0]?.content?.parts?.filter(p=>typeof p.text==="string").map(p=>p.text).join("\n");if(!text)throw new Error("Gemini returned no text.");return{text:clean(text),model};
+    const r=await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey())}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{fileData:{mimeType,fileUri}},{text:promptText}]}],generationConfig:{temperature:.2,topP:.9,maxOutputTokens:65000},safetySettings:[{category:"HARM_CATEGORY_HARASSMENT",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_HATE_SPEECH",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_DANGEROUS_CONTENT",threshold:"BLOCK_NONE"},{category:"HARM_CATEGORY_SEXUALLY_EXPLICIT",threshold:"BLOCK_NONE"}]})},"generate the requested notes");
+    const d=await r.json();const text=d?.candidates?.[0]?.content?.parts?.filter(p=>typeof p.text==="string").map(p=>p.text).join("\n");if(!text)throw new Error("Gemini returned no text.");return{text:clean(text),model};
   }catch(e){last=e;if(/401|403|429|quota|resource_exhausted|failed to fetch/i.test(String(e.message)))throw e;}}
   throw last||new Error("Generation failed.");
 }
+
 function clean(t){return t.replace(/\\text\{([^}]*)\}/g,"$1").replace(/\$\$([\s\S]*?)\$\$/g,"$1").trim();}
-async function testConnection(){if(!apiKey()){openKeyDialog();return;}try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey())}`);if(!r.ok)throw new Error();showToast("Gemini connection works");}catch{showToast("Connection failed");}}
+async function testConnection(){if(!apiKey()){openKeyDialog();return;}try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey())}`);if(r.ok){showToast("Google accepted the Gemini API key");return;}const body=await r.text().catch(()=>"");let detail="";try{detail=JSON.parse(body)?.error?.message||"";}catch{}if(r.status>=500)showToast(`Google Gemini is having a service problem (${r.status}); your key is not the cause. Try again shortly.`);else if(r.status===429)showToast("Google is rate limiting key checks. Wait a few minutes and try again.");else if(r.status===401||r.status===403)showToast(`Google did not accept this API key. Check the saved key and Gemini API access.${detail?` ${detail}`:""}`);else showToast(`Google returned an error while checking this key (${r.status}).${detail?` ${detail}`:""}`);}catch(error){showToast(/failed to fetch|networkerror|network error/i.test(String(error?.message||error))?"Could not connect to Google to check the key. Check your connection and try again.":`Could not check the key: ${error.message}`);}}
 
 function renderReader(){
   const n=state.notes.find(x=>x.id===state.currentNoteId);if(!n){go("library",false);return;}
@@ -323,7 +348,7 @@ function renderReader(){
   <article class="document">${renderMarkdown(n.markdown)}</article></section>`;
   $("#copy").onclick=async()=>{await navigator.clipboard.writeText(n.markdown);showToast("Copied");};
   $("#share").onclick=async()=>{if(navigator.share)await navigator.share({title:n.title,text:n.markdown});else showToast("Sharing is not available here");};
-  $("#delete").onclick=()=>{if(confirm("Delete this item?")){state.notes=state.notes.filter(x=>x.id!==n.id);save();go("library",false);}};
+  $("#delete").onclick=()=>{if(confirm("Delete this item?")){window.ShiurNotesExtensionSync?.recordDeletion(n);state.notes=state.notes.filter(x=>x.id!==n.id);save();go("library",false);}};
 }
 function renderMarkdown(md=""){
   const lines=md.replace(/\r/g,"").split("\n");let out="",inList=false;

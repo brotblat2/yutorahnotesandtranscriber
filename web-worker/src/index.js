@@ -525,7 +525,7 @@ function makeDisplayName(resolved) {
 }
 
 async function uploadToGemini({ apiKey, body, byteLength, mimeType, displayName }) {
-  const start = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(apiKey)}`, {
+  const start = await fetchGemini(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
     headers: {
       "X-Goog-Upload-Protocol": "resumable",
@@ -544,7 +544,7 @@ async function uploadToGemini({ apiKey, body, byteLength, mimeType, displayName 
   const uploadUrl = start.headers.get("X-Goog-Upload-URL");
   if (!uploadUrl) throw new HttpError(502, "Gemini did not return an upload URL.", "GEMINI_UPLOAD_URL_MISSING");
 
-  const finish = await fetch(uploadUrl, {
+  const finish = await fetchGemini(uploadUrl, {
     method: "POST",
     headers: {
       "X-Goog-Upload-Command": "upload, finalize",
@@ -568,7 +568,7 @@ async function uploadToGemini({ apiKey, body, byteLength, mimeType, displayName 
 
 async function waitForGeminiFile(apiKey, fileName) {
   for (let attempt = 0; attempt < 45; attempt++) {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileName}?key=${encodeURIComponent(apiKey)}`);
+    const response = await fetchGemini(`https://generativelanguage.googleapis.com/v1beta/${fileName}?key=${encodeURIComponent(apiKey)}`);
     if (!response.ok) throw geminiError(response.status, await safeErrorText(response), "Could not check Gemini audio processing.");
     const data = await response.json();
     if (data.state === "ACTIVE") return;
@@ -582,7 +582,7 @@ async function generateFromGeminiFile({ apiKey, fileUri, mimeType, prompt }) {
   let lastError = null;
 
   for (const model of MODELS) {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    const response = await fetchGemini(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -632,9 +632,21 @@ async function cleanupGeminiFile(apiKey, fileName) {
 }
 
 function geminiError(status, details, fallback) {
+  let explanation = details;
+  try { explanation = JSON.parse(details)?.error?.message || details; } catch {}
+  explanation = String(explanation || "").slice(0, 300);
+  if (status >= 500) return new HttpError(502, `Google Gemini returned a server error (${status}).${explanation ? ` Google says: ${explanation}` : ""}`, "GEMINI_SERVICE_ERROR");
   if (status === 401 || status === 403) return new HttpError(401, "Gemini rejected the API key. Check it in Settings.", "GEMINI_AUTH_FAILED");
   if (status === 429) return new HttpError(429, "Gemini rate limit or quota reached. Try again later.", "GEMINI_QUOTA");
-  return new HttpError(502, `${fallback}${details ? ` ${details.slice(0, 300)}` : ""}`, "GEMINI_ERROR");
+  return new HttpError(502, `${fallback}${explanation ? ` Google says: ${explanation}` : ""}`, "GEMINI_ERROR");
+}
+
+async function fetchGemini(url, options) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    throw new HttpError(502, "ShiurNotes could not connect to Google Gemini. The connection between the services failed before a response was received.", "GEMINI_CONNECTION_ERROR");
+  }
 }
 
 async function safeErrorText(response) {
